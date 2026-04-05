@@ -1,0 +1,18 @@
+import { AppError } from '../utils/AppError.js';
+
+/**
+ * Restricts access to users whose JWT role is in `allowedRoles`.
+ * Use after `authMiddleware`.
+ * @param {...string} allowedRoles
+ */
+export function roleMiddleware(...allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+    if (!allowedRoles.includes(req.user.role)) {
+      return next(new AppError('You do not have permission to access this resource', 403));
+    }
+    next();
+  };
+}
