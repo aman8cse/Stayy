@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { becomeHost } from '../api/auth.js';
 import { getStoredToken } from '../lib/authStorage.js';
+import { storeUser } from '../lib/userStorage.js';
 
 export default function BecomeHost() {
   const navigate = useNavigate();
@@ -19,7 +20,8 @@ export default function BecomeHost() {
     setLoading(true);
     setError(null);
     try {
-      await becomeHost(token);
+      const { user } = await becomeHost(token);
+      storeUser(user);
       setSuccess(true);
       setTimeout(() => {
         navigate('/listings/new');

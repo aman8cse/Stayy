@@ -59,3 +59,55 @@ export async function createListing(body, token) {
   }
   return data;
 }
+
+export async function getHostListings(token) {
+  const base = getApiBase();
+  const res = await fetch(`${base}/host/listings`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data?.message ?? `Request failed (${res.status})`;
+    throw new Error(message);
+  }
+  return data;
+}
+
+export async function updateListing(listingId, body, token) {
+  const base = getApiBase();
+  const res = await fetch(`${base}/listings/${encodeURIComponent(listingId)}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data?.message ?? `Request failed (${res.status})`;
+    throw new Error(message);
+  }
+  return data;
+}
+
+export async function deleteListing(listingId, token) {
+  const base = getApiBase();
+  const res = await fetch(`${base}/listings/${encodeURIComponent(listingId)}`, {
+    method: 'DELETE',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data?.message ?? `Request failed (${res.status})`;
+    throw new Error(message);
+  }
+  return data;
+}

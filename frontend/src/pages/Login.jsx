@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { login } from '../api/auth.js';
 import { storeToken } from '../lib/authStorage.js';
+import { storeUser } from '../lib/userStorage.js';
 
 function inputClass(hasError) {
   return [
@@ -38,6 +39,7 @@ export default function Login() {
     try {
       const { token, user } = await login(form.email, form.password);
       storeToken(token);
+      storeUser(user);
       navigate('/');
     } catch (err) {
       setServerError(err instanceof Error ? err.message : 'Login failed');

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signup } from '../api/auth.js';
 import { storeToken } from '../lib/authStorage.js';
+import { storeUser } from '../lib/userStorage.js';
 
 function inputClass(hasError) {
   return [
@@ -41,6 +42,7 @@ export default function SignUp() {
     try {
       const { token, user } = await signup(form.email, form.password, form.name, form.phone);
       storeToken(token);
+      storeUser(user);
       navigate('/');
     } catch (err) {
       setServerError(err instanceof Error ? err.message : 'Signup failed');

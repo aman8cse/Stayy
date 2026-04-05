@@ -1,4 +1,5 @@
 import { getApiBase } from '../lib/apiBase.js';
+import { storeUser } from '../lib/userStorage.js';
 
 export async function signup(email, password, name, phone) {
   const base = getApiBase();
