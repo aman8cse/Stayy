@@ -20,6 +20,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/listings/new" element={<CreateListing />} />
+            <Route path="/host/listings/:listingId/edit" element={<CreateListing />} />
             <Route path="/listings/:listingId" element={<ListingDetails />} />
             <Route path="/bookings" element={<MyBookings />} />
             <Route path="/become-host" element={<BecomeHost />} />

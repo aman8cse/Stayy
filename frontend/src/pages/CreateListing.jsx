@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { createListing } from '../api/listings.js';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { createListing, updateListing, fetchListingById } from '../api/listings.js';
 import { getStoredToken } from '../lib/authStorage.js';
 import { validateListingForm } from '../validation/listingForm.js';
 
@@ -32,14 +33,57 @@ function inputClass(hasError) {
 }
 
 export default function CreateListing() {
+  const { listingId } = useParams();
+  const navigate = useNavigate();
+  const isEditMode = !!listingId;
+
   const [form, setForm] = useState(initialForm);
   const [touched, setTouched] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [serverError, setServerError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(isEditMode);
 
   const token = getStoredToken();
+
+  // Load existing listing data when in edit mode
+  useEffect(() => {
+    if (!isEditMode) {
+      setLoading(false);
+      return;
+    }
+
+    async function loadListing() {
+      try {
+        const data = await fetchListingById(listingId);
+        if (data.listing) {
+          const listing = data.listing;
+          const unit = listing.units?.[0];
+          setForm({
+            title: listing.title || '',
+            description: listing.description || '',
+            city: listing.city || '',
+            state: listing.state || '',
+            country: listing.country || '',
+            latitude: listing.latitude || '',
+            longitude: listing.longitude || '',
+            roomPurpose: listing.roomPurpose || '',
+            unitType: unit?.unitType || '',
+            pricePerHour: unit?.pricePerHour || '',
+            pricePerDay: unit?.pricePerDay || '',
+            capacity: unit?.capacity || '',
+          });
+        }
+      } catch (err) {
+        setServerError(err instanceof Error ? err.message : 'Failed to load listing');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadListing();
+  }, [isEditMode, listingId]);
 
   const validation = validateListingForm(form);
   const errors = validation.ok ? {} : validation.errors;
@@ -73,11 +117,29 @@ export default function CreateListing() {
 
     setSubmitting(true);
     try {
-      const data = await createListing(v.payload, auth);
-      setSuccess(data);
-      setForm(initialForm);
-      setTouched({});
-      setSubmitAttempted(false);
+      if (isEditMode) {
+        // Extract only editable fields for listing update (unit pricing in edit mode is not supported by backend)
+        const updates = {
+          title: v.payload.title,
+          description: v.payload.description,
+          city: v.payload.city,
+          state: v.payload.state,
+          country: v.payload.country,
+          latitude: v.payload.latitude,
+          longitude: v.payload.longitude,
+          roomPurpose: v.payload.roomPurpose,
+        };
+        const data = await updateListing(listingId, updates, auth);
+        setSuccess(data);
+        setServerError(null);
+        // Optionally navigate back or show success
+      } else {
+        const data = await createListing(v.payload, auth);
+        setSuccess(data);
+        setForm(initialForm);
+        setTouched({});
+        setSubmitAttempted(false);
+      }
     } catch (err) {
       setServerError(err instanceof Error ? err.message : 'Request failed');
     } finally {
@@ -85,13 +147,25 @@ export default function CreateListing() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-slate-600">Loading listing...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
         <header className="mb-8">
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Create a listing</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+            {isEditMode ? 'Edit listing' : 'Create a listing'}
+          </h1>
           <p className="mt-2 text-slate-600">
-            Add your space details and pricing. This creates the listing and its first bookable unit in one step.
+            {isEditMode
+              ? 'Update your space details.'
+              : 'Add your space details and pricing. This creates the listing and its first bookable unit in one step.'}
           </p>
           {!token ? (
             <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -118,9 +192,18 @@ export default function CreateListing() {
             className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
             role="status"
           >
-            Listing created.{' '}
-            <span className="font-medium">{success.listing?.title ?? 'Your space'}</span> is live with unit pricing
-            configured.
+            {isEditMode ? (
+              <>
+                Listing updated.{' '}
+                <span className="font-medium">{success.listing?.title ?? 'Your space'}</span> changes saved.
+              </>
+            ) : (
+              <>
+                Listing created.{' '}
+                <span className="font-medium">{success.listing?.title ?? 'Your space'}</span> is live with unit pricing
+                configured.
+              </>
+            )}
           </div>
         ) : null}
 
@@ -244,7 +327,14 @@ export default function CreateListing() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Unit & pricing</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Unit & pricing</h2>
+              {isEditMode && (
+                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                  Pricing is read-only
+                </span>
+              )}
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="roomPurpose" className="block text-sm font-medium text-slate-700">
@@ -275,6 +365,7 @@ export default function CreateListing() {
                   value={form.unitType}
                   onChange={(e) => update('unitType', e.target.value)}
                   onBlur={() => onBlur('unitType')}
+                  disabled={isEditMode}
                   className={inputClass(Boolean(showError('unitType')))}
                 >
                   <option value="">Select type</option>
@@ -299,6 +390,7 @@ export default function CreateListing() {
                   value={form.pricePerHour}
                   onChange={(e) => update('pricePerHour', e.target.value)}
                   onBlur={() => onBlur('pricePerHour')}
+                  disabled={isEditMode}
                   className={inputClass(Boolean(showError('pricePerHour')))}
                 />
                 <FieldError message={showError('pricePerHour')} />
@@ -316,6 +408,7 @@ export default function CreateListing() {
                   value={form.pricePerDay}
                   onChange={(e) => update('pricePerDay', e.target.value)}
                   onBlur={() => onBlur('pricePerDay')}
+                  disabled={isEditMode}
                   className={inputClass(Boolean(showError('pricePerDay')))}
                 />
                 <FieldError message={showError('pricePerDay')} />
@@ -333,6 +426,7 @@ export default function CreateListing() {
                   value={form.capacity}
                   onChange={(e) => update('capacity', e.target.value)}
                   onBlur={() => onBlur('capacity')}
+                  disabled={isEditMode}
                   className={inputClass(Boolean(showError('capacity')))}
                 />
                 <FieldError message={showError('capacity')} />
@@ -346,9 +440,11 @@ export default function CreateListing() {
               disabled={submitting}
               className="inline-flex items-center justify-center rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? 'Publishing…' : 'Publish listing'}
+              {submitting ? (isEditMode ? 'Updating…' : 'Publishing…') : (isEditMode ? 'Update listing' : 'Publish listing')}
             </button>
-            <p className="text-xs text-slate-500">Submits to POST /listings as a host.</p>
+            <p className="text-xs text-slate-500">
+              {isEditMode ? 'Submits to PUT /listings/:id as a host.' : 'Submits to POST /listings as a host.'}
+            </p>
           </div>
         </form>
       </div>
