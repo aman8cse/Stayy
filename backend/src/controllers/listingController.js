@@ -27,3 +27,27 @@ export async function getById(req, res) {
     listing,
   });
 }
+
+export async function getHostListings(req, res) {
+  const listings = await listingService.getHostListings(req.user.id);
+  res.status(200).json({
+    success: true,
+    listings,
+  });
+}
+
+export async function updateListing(req, res) {
+  const listing = await listingService.updateListing(req.params.listingId, req.user.id, req.body);
+  res.status(200).json({
+    success: true,
+    listing,
+  });
+}
+
+export async function deleteListing(req, res) {
+  await listingService.deleteListing(req.params.listingId, req.user.id);
+  res.status(200).json({
+    success: true,
+    message: 'Listing deleted',
+  });
+}
