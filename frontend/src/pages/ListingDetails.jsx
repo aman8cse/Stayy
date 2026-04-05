@@ -4,6 +4,7 @@ import { fetchListingById } from '../api/listings.js';
 import { BookingConflictError, createBooking } from '../api/bookings.js';
 import { getStoredToken } from '../lib/authStorage.js';
 import { estimateBookingTotal } from '../lib/bookingEstimate.js';
+import { ReviewsList, ReviewForm } from '../components/Reviews.jsx';
 
 const PURPOSE_LABELS = {
   sleep: 'Sleep',
@@ -324,6 +325,16 @@ export default function ListingDetails() {
             </button>
           </form>
         )}
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+        <h2 className="text-lg font-semibold text-slate-900">Reviews</h2>
+        <div className="mt-6 space-y-6">
+          <ReviewsList listingId={listing._id} />
+        </div>
+        <div className="mt-8">
+          <ReviewForm listingId={listing._id} />
+        </div>
       </section>
     </div>
   );
