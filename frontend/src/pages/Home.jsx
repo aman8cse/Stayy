@@ -322,7 +322,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-slate-200/80 bg-white py-8 text-center text-xs text-slate-500">
-        Stayy — short stays for students & travelers
+        Apna Hostel — short stays for students & travelers
       </footer>
     </div>
   );

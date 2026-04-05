@@ -63,7 +63,7 @@ export default function Login() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900">Log in</h1>
-          <p className="mt-2 text-slate-600">Access your Stayy account</p>
+          <p className="mt-2 text-slate-600">Access your Apna Hostel account</p>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">

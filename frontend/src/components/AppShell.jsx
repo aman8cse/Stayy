@@ -30,7 +30,7 @@ export default function AppShell() {
       <header className={`sticky top-0 z-20 border-b ${theme === 'dark' ? 'border-slate-700 bg-slate-800/90' : 'border-slate-200/80 bg-white/90'} backdrop-blur supports-[backdrop-filter]:${theme === 'dark' ? 'bg-slate-800/75' : 'bg-white/75'}`}>
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <NavLink to="/" className={`text-lg font-semibold tracking-tight ${theme === 'dark' ? 'text-brand-400' : 'text-brand-700'}`}>
-            Stayy
+            Apna Hostel
           </NavLink>
           <nav className="flex flex-wrap items-center gap-1" aria-label="Main">
             <NavLink to="/" className={linkClass} end>

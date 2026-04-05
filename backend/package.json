@@ -1,7 +1,7 @@
 {
-  "name": "stayy-api",
+  "name": "apna-hostel-api",
   "version": "1.0.0",
-  "description": "Stayy backend API",
+  "description": "Apna Hostel backend API",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
