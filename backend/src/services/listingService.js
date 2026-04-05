@@ -375,3 +375,108 @@ export async function findListingById(listingId) {
   }
   return listing;
 }
+
+/**
+ * Get all listings for a host
+ * @param {string} hostId
+ */
+export async function getHostListings(hostId) {
+  if (!mongoose.Types.ObjectId.isValid(hostId)) {
+    throw new AppError('Invalid host id', 400);
+  }
+
+  const listings = await Listing.find({ host: hostId })
+    .populate('host', 'name email phone role isVerified')
+    .sort({ createdAt: -1 });
+
+  // Add unit and review data for each listing
+  for (const listing of listings) {
+    const units = await Unit.find({ listing: listing._id });
+    listing.units = units;
+  }
+
+  return listings;
+}
+
+/**
+ * Update a listing (only host can update their own listing)
+ * @param {string} listingId
+ * @param {string} hostId
+ * @param {Record<string, unknown>} updates
+ */
+export async function updateListing(listingId, hostId, updates) {
+  if (!mongoose.Types.ObjectId.isValid(listingId)) {
+    throw new AppError('Invalid listing id', 400);
+  }
+  if (!mongoose.Types.ObjectId.isValid(hostId)) {
+    throw new AppError('Invalid host id', 400);
+  }
+
+  const listing = await Listing.findById(listingId);
+  if (!listing) {
+    throw new AppError('Listing not found', 404);
+  }
+
+  // Check authorization
+  if (listing.host.toString() !== hostId) {
+    throw new AppError('You can only update your own listings', 403);
+  }
+
+  // Only allow certain fields to be updated
+  const allowedFields = ['title', 'description', 'city', 'state', 'country', 'latitude', 'longitude', 'roomPurpose'];
+  
+  for (const field of allowedFields) {
+    if (field in updates) {
+      if (field === 'latitude' && updates[field] !== undefined) {
+        const n = Number(updates[field]);
+        if (!Number.isFinite(n) || n < -90 || n > 90) {
+          throw new AppError('latitude must be between -90 and 90', 400);
+        }
+        listing[field] = n;
+      } else if (field === 'longitude' && updates[field] !== undefined) {
+        const n = Number(updates[field]);
+        if (!Number.isFinite(n) || n < -180 || n > 180) {
+          throw new AppError('longitude must be between -180 and 180', 400);
+        }
+        listing[field] = n;
+      } else if (typeof updates[field] === 'string') {
+        listing[field] = updates[field];
+      }
+    }
+  }
+
+  await listing.save();
+  return listing;
+}
+
+/**
+ * Delete a listing and all its units (only host can delete their own listing)
+ * @param {string} listingId
+ * @param {string} hostId
+ */
+export async function deleteListing(listingId, hostId) {
+  if (!mongoose.Types.ObjectId.isValid(listingId)) {
+    throw new AppError('Invalid listing id', 400);
+  }
+  if (!mongoose.Types.ObjectId.isValid(hostId)) {
+    throw new AppError('Invalid host id', 400);
+  }
+
+  const listing = await Listing.findById(listingId);
+  if (!listing) {
+    throw new AppError('Listing not found', 404);
+  }
+
+  // Check authorization
+  if (listing.host.toString() !== hostId) {
+    throw new AppError('You can only delete your own listings', 403);
+  }
+
+  // Delete all units associated with this listing
+  await Unit.deleteMany({ listing: listingId });
+
+  // Delete the listing
+  await Listing.deleteOne({ _id: listingId });
+
+  return { success: true };
+}
