@@ -7,7 +7,7 @@ function formatMoney(n) {
   if (n == null || Number.isNaN(n)) return '—';
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     maximumFractionDigits: 0,
   }).format(n);
 }
@@ -31,7 +31,7 @@ function ListingCard({ listing, onDelete, onEdit }) {
     }
   }
 
-  const minPrice = listing.units?.[0]?.pricePerHour ?? null;
+  const minPrice = listing.units?.[0]?.pricePerDay ?? null;
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-6 hover:shadow-md transition">
@@ -48,7 +48,7 @@ function ListingCard({ listing, onDelete, onEdit }) {
             </span>
             {minPrice && (
               <span className="inline-block px-2.5 py-1 rounded text-xs font-medium bg-brand-50 text-brand-700">
-                From {formatMoney(minPrice)}/hr
+                From {formatMoney(minPrice)}/day
               </span>
             )}
           </div>

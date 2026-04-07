@@ -1,4 +1,3 @@
-const ROOM_PURPOSES = new Set(['sleep', 'study', 'freshen_up']);
 const UNIT_TYPES = new Set(['room', 'bed', 'entire_place']);
 
 function reqStr(value, field, max) {
@@ -49,18 +48,10 @@ export function validateListingForm(raw) {
   const longitude = reqNumber(raw.longitude, 'Longitude', { min: -180, max: 180 });
   if (!longitude.ok) errors.longitude = longitude.message;
 
-  const rp = raw.roomPurpose;
-  if (typeof rp !== 'string' || !ROOM_PURPOSES.has(rp)) {
-    errors.roomPurpose = 'Choose a valid room purpose';
-  }
-
   const ut = raw.unitType;
   if (typeof ut !== 'string' || !UNIT_TYPES.has(ut)) {
     errors.unitType = 'Choose a valid unit type';
   }
-
-  const pricePerHour = reqNumber(raw.pricePerHour, 'Price per hour', { min: 0 });
-  if (!pricePerHour.ok) errors.pricePerHour = pricePerHour.message;
 
   const pricePerDay = reqNumber(raw.pricePerDay, 'Price per day', { min: 0 });
   if (!pricePerDay.ok) errors.pricePerDay = pricePerDay.message;
@@ -83,9 +74,7 @@ export function validateListingForm(raw) {
       country: country.value,
       latitude: latitude.value,
       longitude: longitude.value,
-      roomPurpose: rp,
       unitType: ut,
-      pricePerHour: pricePerHour.value,
       pricePerDay: pricePerDay.value,
       capacity: capacity.value,
     },

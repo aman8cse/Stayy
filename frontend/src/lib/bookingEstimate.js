@@ -52,14 +52,11 @@ export function durationHours(start, end) {
 }
 
 /**
- * @param {{ pricePerHour: number; pricePerDay: number }} unit
+ * @param {{ pricePerDay: number }} unit
  * @param {number} totalHours
  */
 export function computeTotalPrice(unit, totalHours) {
   if (totalHours == null || !Number.isFinite(totalHours)) return null;
-  if (totalHours < 24) {
-    return Math.round(totalHours * unit.pricePerHour * 100) / 100;
-  }
   const billedDays = Math.ceil(totalHours / 24);
   return Math.round(billedDays * unit.pricePerDay * 100) / 100;
 }
@@ -69,7 +66,7 @@ export function computeTotalPrice(unit, totalHours) {
  * @param {string} endDate
  * @param {string} startTime
  * @param {string} endTime
- * @param {{ pricePerHour: number; pricePerDay: number } | null} unit
+ * @param {{ pricePerDay: number } | null} unit
  */
 export function estimateBookingTotal(startDate, endDate, startTime, endTime, unit) {
   if (!unit) return { totalHours: null, totalPrice: null };

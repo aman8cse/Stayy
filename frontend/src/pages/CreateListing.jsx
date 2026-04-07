@@ -12,9 +12,7 @@ const initialForm = {
   country: '',
   latitude: '',
   longitude: '',
-  roomPurpose: '',
   unitType: '',
-  pricePerHour: '',
   pricePerDay: '',
   capacity: '',
 };
@@ -68,9 +66,7 @@ export default function CreateListing() {
             country: listing.country || '',
             latitude: listing.latitude || '',
             longitude: listing.longitude || '',
-            roomPurpose: listing.roomPurpose || '',
             unitType: unit?.unitType || '',
-            pricePerHour: unit?.pricePerHour || '',
             pricePerDay: unit?.pricePerDay || '',
             capacity: unit?.capacity || '',
           });
@@ -337,25 +333,6 @@ export default function CreateListing() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="roomPurpose" className="block text-sm font-medium text-slate-700">
-                  Room purpose
-                </label>
-                <select
-                  id="roomPurpose"
-                  name="roomPurpose"
-                  value={form.roomPurpose}
-                  onChange={(e) => update('roomPurpose', e.target.value)}
-                  onBlur={() => onBlur('roomPurpose')}
-                  className={inputClass(Boolean(showError('roomPurpose')))}
-                >
-                  <option value="">Select purpose</option>
-                  <option value="sleep">Sleep</option>
-                  <option value="study">Study</option>
-                  <option value="freshen_up">Freshen up</option>
-                </select>
-                <FieldError message={showError('roomPurpose')} />
-              </div>
-              <div>
                 <label htmlFor="unitType" className="block text-sm font-medium text-slate-700">
                   Unit type
                 </label>
@@ -376,28 +353,10 @@ export default function CreateListing() {
                 <FieldError message={showError('unitType')} />
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <label htmlFor="pricePerHour" className="block text-sm font-medium text-slate-700">
-                  Price / hour (USD)
-                </label>
-                <input
-                  id="pricePerHour"
-                  name="pricePerHour"
-                  inputMode="decimal"
-                  min={0}
-                  step="0.01"
-                  value={form.pricePerHour}
-                  onChange={(e) => update('pricePerHour', e.target.value)}
-                  onBlur={() => onBlur('pricePerHour')}
-                  disabled={isEditMode}
-                  className={inputClass(Boolean(showError('pricePerHour')))}
-                />
-                <FieldError message={showError('pricePerHour')} />
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="pricePerDay" className="block text-sm font-medium text-slate-700">
-                  Price / day (USD)
+                  Price / day (INR)
                 </label>
                 <input
                   id="pricePerDay"

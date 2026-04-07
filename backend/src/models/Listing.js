@@ -43,17 +43,11 @@ const listingSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    roomPurpose: {
-      type: String,
-      enum: ['sleep', 'study', 'freshen_up'],
-      required: true,
-    },
   },
   { timestamps: true }
 );
 
 listingSchema.index({ city: 1 });
-listingSchema.index({ roomPurpose: 1, createdAt: -1 });
 
 listingSchema.virtual('units', {
   ref: 'Unit',

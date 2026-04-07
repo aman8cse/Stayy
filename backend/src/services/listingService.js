@@ -5,7 +5,6 @@ import { Unit } from '../models/Unit.js';
 import { User } from '../models/User.js';
 import { AppError } from '../utils/AppError.js';
 
-const ROOM_PURPOSES = new Set(['sleep', 'study', 'freshen_up']);
 const UNIT_TYPES = new Set(['room', 'bed', 'entire_place']);
 
 const DEFAULT_PAGE = 1;
@@ -71,15 +70,7 @@ function parseSearchQuery(q) {
     }
   }
 
-  let roomPurpose;
-  if (q.roomPurpose !== undefined && q.roomPurpose !== null && q.roomPurpose !== '') {
-    if (typeof q.roomPurpose !== 'string' || !ROOM_PURPOSES.has(q.roomPurpose)) {
-      throw new AppError('roomPurpose must be sleep, study, or freshen_up', 400);
-    }
-    roomPurpose = q.roomPurpose;
-  }
-
-  return { page, limit, city, roomPurpose, minPrice, maxPrice };
+  return { page, limit, city, minPrice, maxPrice };
 }
 
 function requireString(value, field, { max = 5000, emptyMessage } = {}) {
@@ -120,17 +111,11 @@ function parseCreatePayload(body) {
   const latitude = requireNumber(body?.latitude, 'latitude', { min: -90, max: 90 });
   const longitude = requireNumber(body?.longitude, 'longitude', { min: -180, max: 180 });
 
-  const roomPurpose = body?.roomPurpose;
-  if (typeof roomPurpose !== 'string' || !ROOM_PURPOSES.has(roomPurpose)) {
-    throw new AppError('roomPurpose must be sleep, study, or freshen_up', 400);
-  }
-
   const unitType = body?.unitType;
   if (typeof unitType !== 'string' || !UNIT_TYPES.has(unitType)) {
     throw new AppError('unitType must be room, bed, or entire_place', 400);
   }
 
-  const pricePerHour = requireNumber(body?.pricePerHour, 'pricePerHour', { min: 0 });
   const pricePerDay = requireNumber(body?.pricePerDay, 'pricePerDay', { min: 0 });
   const capacity = requireNumber(body?.capacity, 'capacity', { min: 1, integer: true });
 
@@ -143,11 +128,9 @@ function parseCreatePayload(body) {
       country,
       latitude,
       longitude,
-      roomPurpose,
     },
     unit: {
       unitType,
-      pricePerHour,
       pricePerDay,
       capacity,
     },
@@ -199,9 +182,6 @@ export async function searchListings(query) {
   if (city) {
     listingMatch.city = { $regex: escapeRegex(city), $options: 'i' };
   }
-  if (roomPurpose) {
-    listingMatch.roomPurpose = roomPurpose;
-  }
 
   const priceMatch = {};
   if (minPrice !== undefined) priceMatch.$gte = minPrice;
@@ -210,7 +190,7 @@ export async function searchListings(query) {
 
   const unitPipeline = [{ $match: { $expr: { $eq: ['$listing', '$$lid'] } } }];
   if (hasPriceFilter) {
-    unitPipeline.push({ $match: { pricePerHour: priceMatch } });
+    unitPipeline.push({ $match: { pricePerDay: priceMatch } });
   }
 
   const pipeline = [];

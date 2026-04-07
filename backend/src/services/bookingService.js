@@ -38,13 +38,10 @@ async function hasConflictingBooking(unitId, newStart, newEnd) {
 }
 
 /**
- * @param {{ pricePerHour: number; pricePerDay: number }} unit
+ * @param {{ pricePerDay: number }} unit
  * @param {number} totalHours
  */
 function computeTotalPrice(unit, totalHours) {
-  if (totalHours < 24) {
-    return Math.round(totalHours * unit.pricePerHour * 100) / 100;
-  }
   const billedDays = Math.ceil(totalHours / 24);
   return Math.round(billedDays * unit.pricePerDay * 100) / 100;
 }
@@ -98,7 +95,7 @@ export async function createBooking(userId, body) {
 
   await booking.populate({
     path: 'unit',
-    populate: { path: 'listing', select: 'title city state country isVerified roomPurpose' },
+    populate: { path: 'listing', select: 'title city state country isVerified' },
   });
 
   return booking;
@@ -116,7 +113,7 @@ export async function listBookingsForUser(userId) {
     .sort({ createdAt: -1 })
     .populate({
       path: 'unit',
-      populate: { path: 'listing', select: 'title city state country roomPurpose isVerified' },
+      populate: { path: 'listing', select: 'title city state country isVerified' },
     })
     .lean();
 }

@@ -4,13 +4,6 @@ import { fetchListings } from '../api/listings.js';
 
 const LIMIT = 12;
 
-const PURPOSE_OPTIONS = [
-  { value: '', label: 'Any purpose' },
-  { value: 'sleep', label: 'Sleep' },
-  { value: 'study', label: 'Study' },
-  { value: 'freshen_up', label: 'Freshen up' },
-];
-
 function useDebouncedValue(value, delayMs) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -20,20 +13,20 @@ function useDebouncedValue(value, delayMs) {
   return debounced;
 }
 
-function minHourlyPrice(units) {
-  if (!Array.isArray(units) || units.length === 0) return null;
-  const nums = units.map((u) => u.pricePerHour).filter((n) => typeof n === 'number');
-  if (!nums.length) return null;
-  return Math.min(...nums);
-}
-
 function formatMoney(n) {
   if (n == null || Number.isNaN(n)) return '—';
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     maximumFractionDigits: 0,
   }).format(n);
+}
+
+function minDailyPrice(units) {
+  if (!Array.isArray(units) || units.length === 0) return null;
+  const nums = units.map((u) => u.pricePerDay).filter((n) => typeof n === 'number');
+  if (!nums.length) return null;
+  return Math.min(...nums);
 }
 
 function Stars({ value }) {
@@ -61,7 +54,6 @@ export default function Home() {
 
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [roomPurpose, setRoomPurpose] = useState('');
   const [page, setPage] = useState(1);
 
   const [data, setData] = useState(null);
@@ -73,11 +65,10 @@ export default function Home() {
       city: city || undefined,
       minPrice: optionalNumber(minPrice),
       maxPrice: optionalNumber(maxPrice),
-      roomPurpose: roomPurpose || undefined,
       page,
       limit: LIMIT,
     }),
-    [city, minPrice, maxPrice, roomPurpose, page]
+    [city, minPrice, maxPrice, page]
   );
 
   const load = useCallback(async () => {
@@ -100,7 +91,7 @@ export default function Home() {
 
   useEffect(() => {
     setPage(1);
-  }, [city, minPrice, maxPrice, roomPurpose]);
+  }, [city, minPrice, maxPrice]);
 
   const listings = data?.listings ?? [];
   const total = data?.total ?? 0;
@@ -113,10 +104,10 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-              Find a room for a few hours or days
+              Find a room for days
             </h1>
             <p className="mt-2 max-w-2xl text-slate-600">
-              Search by city, tune price and purpose, and browse verified local hosts.
+              Search by city and price to find and browse verified local hosts.
             </p>
           </div>
 
@@ -138,7 +129,7 @@ export default function Home() {
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <label htmlFor="minPrice" className="block text-sm font-medium text-slate-700">
-                  Min $/hr
+                  Min price ($)
                 </label>
                 <input
                   id="minPrice"
@@ -151,7 +142,7 @@ export default function Home() {
               </div>
               <div>
                 <label htmlFor="maxPrice" className="block text-sm font-medium text-slate-700">
-                  Max $/hr
+                  Max price ($)
                 </label>
                 <input
                   id="maxPrice"
@@ -161,23 +152,6 @@ export default function Home() {
                   onChange={(e) => setMaxPrice(e.target.value)}
                   className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none ring-brand-500/30 focus:border-brand-500 focus:ring-4"
                 />
-              </div>
-              <div>
-                <label htmlFor="purpose" className="block text-sm font-medium text-slate-700">
-                  Room purpose
-                </label>
-                <select
-                  id="purpose"
-                  value={roomPurpose}
-                  onChange={(e) => setRoomPurpose(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none ring-brand-500/30 focus:border-brand-500 focus:ring-4"
-                >
-                  {PURPOSE_OPTIONS.map((o) => (
-                    <option key={o.value || 'any'} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
           </div>
@@ -222,14 +196,14 @@ export default function Home() {
 
         {!loading && !error && listings.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
-            <p className="text-lg font-medium text-slate-800">No listings match your filters</p>
+            <p className="texDai font-medium text-slate-800">No listings match your filters</p>
             <p className="mt-2 text-sm text-slate-500">Try another city or widen your price range.</p>
           </div>
         ) : null}
 
         <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((listing) => {
-            const price = minHourlyPrice(listing.units);
+            const price = minDailyPrice(listing.units);
             const rating = listing.averageRating;
             const verified = listing.isVerified;
             return (
@@ -266,7 +240,7 @@ export default function Home() {
                     <div className="mt-auto flex items-end justify-between gap-3 border-t border-slate-100 pt-4">
                       <div>
                         <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                          From / hour
+                          From / day
                         </p>
                         <p className="text-lg font-semibold text-slate-900">{formatMoney(price)}</p>
                       </div>

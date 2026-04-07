@@ -7,7 +7,7 @@ function formatMoney(n) {
   if (n == null || Number.isNaN(n)) return '—';
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(n);

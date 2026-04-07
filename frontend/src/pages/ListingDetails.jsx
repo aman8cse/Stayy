@@ -6,17 +6,11 @@ import { getStoredToken } from '../lib/authStorage.js';
 import { estimateBookingTotal } from '../lib/bookingEstimate.js';
 import { ReviewsList, ReviewForm } from '../components/Reviews.jsx';
 
-const PURPOSE_LABELS = {
-  sleep: 'Sleep',
-  study: 'Study',
-  freshen_up: 'Freshen up',
-};
-
 function formatMoney(n) {
   if (n == null || Number.isNaN(n)) return '—';
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(n);
@@ -148,7 +142,6 @@ export default function ListingDetails() {
     );
   }
 
-  const purposeLabel = PURPOSE_LABELS[listing.roomPurpose] ?? listing.roomPurpose;
   const host = listing.host;
 
   return (
@@ -164,9 +157,6 @@ export default function ListingDetails() {
               Verified listing
             </span>
           ) : null}
-          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-            {purposeLabel}
-          </span>
         </div>
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{listing.title}</h1>
         <p className="text-slate-600">
@@ -222,8 +212,7 @@ export default function ListingDetails() {
                 >
                   {units.map((u) => (
                     <option key={u._id} value={u._id}>
-                      {u.unitType?.replace('_', ' ') ?? 'Unit'} · ${u.pricePerHour}/hr · ${u.pricePerDay}/day
-                      · cap {u.capacity}
+                      {u.unitType?.replace('_', ' ') ?? 'Unit'} · ${u.pricePerDay}/day · cap {u.capacity}
                     </option>
                   ))}
                 </select>
