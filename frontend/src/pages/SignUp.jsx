@@ -43,7 +43,8 @@ export default function SignUp() {
       const { token, user } = await signup(form.email, form.password, form.name, form.phone);
       storeToken(token);
       storeUser(user);
-      navigate('/');
+      // Redirect to OTP verification page with email
+      navigate('/verify-otp', { state: { email: form.email } });
     } catch (err) {
       setServerError(err instanceof Error ? err.message : 'Signup failed');
     } finally {

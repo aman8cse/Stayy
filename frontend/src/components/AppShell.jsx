@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { getStoredToken, clearToken } from '../lib/authStorage.js';
-import { getStoredUser, clearUser, isUserHost } from '../lib/userStorage.js';
+import { getStoredUser, clearUser, isUserHost, isUserAdmin } from '../lib/userStorage.js';
 import { useTheme } from '../lib/theme.jsx';
 
 const linkClass = ({ isActive }) =>
@@ -17,6 +17,7 @@ export default function AppShell() {
   const token = getStoredToken();
   const user = getStoredUser();
   const isHost = isUserHost();
+  const isAdmin = isUserAdmin();
 
   function handleLogout() {
     clearToken();
@@ -39,6 +40,11 @@ export default function AppShell() {
             {token && isHost && (
               <NavLink to="/host/listings" className={linkClass}>
                 My listings
+              </NavLink>
+            )}
+            {token && isAdmin && (
+              <NavLink to="/admin/dashboard" className={linkClass}>
+                Admin
               </NavLink>
             )}
           </nav>
@@ -70,21 +76,35 @@ export default function AppShell() {
                 </button>
                 {showUserMenu && (
                   <div className={`absolute right-0 top-full mt-1 rounded-lg border ${theme === 'dark' ? 'border-slate-600 bg-slate-800 shadow-xl' : 'border-slate-200 bg-white shadow-lg'}`}>
+                    {/* Common for all authenticated users */}
                     <NavLink
                       to="/bookings"
                       onClick={() => setShowUserMenu(false)}
-                      className={`block px-4 py-2 text-sm ${theme === 'dark' ? 'text-slate-200 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-50'} rounded-t-lg`}
+                      className={`block px-4 py-2 text-sm rounded-t-lg ${theme === 'dark' ? 'text-slate-200 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-50'}`}
                     >
                       My bookings
                     </NavLink>
-                    {isHost ? (
+
+                    {/* Admin only */}
+                    {isAdmin && (
+                      <NavLink
+                        to="/admin/dashboard"
+                        onClick={() => setShowUserMenu(false)}
+                        className={`block px-4 py-2 text-sm border-t ${theme === 'dark' ? 'text-slate-200 hover:bg-slate-700 border-slate-700' : 'text-slate-700 hover:bg-slate-50 border-slate-200'}`}
+                      >
+                        Admin Dashboard
+                      </NavLink>
+                    )}
+
+                    {/* Host specific */}
+                    {isHost && (
                       <>
                         <NavLink
                           to="/host/listings"
                           onClick={() => setShowUserMenu(false)}
-                          className={`block px-4 py-2 text-sm ${theme === 'dark' ? 'text-slate-200 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-50'}`}
+                          className={`block px-4 py-2 text-sm border-t ${theme === 'dark' ? 'text-slate-200 hover:bg-slate-700 border-slate-700' : 'text-slate-700 hover:bg-slate-50 border-slate-200'}`}
                         >
-                          Host listings
+                          My listings
                         </NavLink>
                         <NavLink
                           to="/listings/new"
@@ -94,18 +114,23 @@ export default function AppShell() {
                           Create listing
                         </NavLink>
                       </>
-                    ) : (
+                    )}
+
+                    {/* Regular user (not a host) */}
+                    {!isHost && !isAdmin && (
                       <NavLink
                         to="/become-host"
                         onClick={() => setShowUserMenu(false)}
-                        className={`block px-4 py-2 text-sm ${theme === 'dark' ? 'text-slate-200 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-50'}`}
+                        className={`block px-4 py-2 text-sm border-t ${theme === 'dark' ? 'text-slate-200 hover:bg-slate-700 border-slate-700' : 'text-slate-700 hover:bg-slate-50 border-slate-200'}`}
                       >
                         Become a host
                       </NavLink>
                     )}
+
+                    {/* Logout - always at bottom */}
                     <button
                       onClick={handleLogout}
-                      className={`w-full text-left px-4 py-2 text-sm ${theme === 'dark' ? 'text-red-400 hover:bg-slate-700 border-slate-600' : 'text-red-600 hover:bg-slate-50 border-slate-200'} rounded-b-lg border-t`}
+                      className={`w-full text-left px-4 py-2 text-sm rounded-b-lg border-t ${theme === 'dark' ? 'text-red-400 hover:bg-slate-700 border-slate-700' : 'text-red-600 hover:bg-slate-50 border-slate-200'}`}
                     >
                       Log out
                     </button>

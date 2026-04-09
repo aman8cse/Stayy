@@ -57,6 +57,14 @@ export function durationHours(start, end) {
  */
 export function computeTotalPrice(unit, totalHours) {
   if (totalHours == null || !Number.isFinite(totalHours)) return null;
+  
+  // Under 24 hours: use hourly rate (pricePerDay / 24)
+  if (totalHours < 24) {
+    const hourlyRate = unit.pricePerDay / 24;
+    return Math.round(totalHours * hourlyRate * 100) / 100;
+  }
+  
+  // 24 hours or more: use daily rate (round up to full days)
   const billedDays = Math.ceil(totalHours / 24);
   return Math.round(billedDays * unit.pricePerDay * 100) / 100;
 }

@@ -63,7 +63,8 @@ export default function ListingDetails() {
     load();
   }, [load]);
 
-  const units = listing?.units ?? [];
+  // Only show units with available quantity (quantity > 0)
+  const units = (listing?.units ?? []).filter((u) => (u.quantity ?? 1) > 0);
   const selectedUnit = useMemo(
     () => units.find((u) => u._id === unitId) ?? units[0] ?? null,
     [units, unitId]
@@ -212,7 +213,7 @@ export default function ListingDetails() {
                 >
                   {units.map((u) => (
                     <option key={u._id} value={u._id}>
-                      {u.unitType?.replace('_', ' ') ?? 'Unit'} · ${u.pricePerDay}/day · cap {u.capacity}
+                      {u.unitType?.replace('_', ' ') ?? 'Unit'} · ${u.pricePerDay}/day · cap {u.capacity} · qty {u.quantity ?? 1}
                     </option>
                   ))}
                 </select>

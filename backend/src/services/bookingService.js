@@ -10,6 +10,8 @@ import {
   utcMidnightFromParts,
   utcDateTimeFromParts,
 } from '../utils/bookingDatetime.js';
+import { sendBookingConfirmationGuestEmail, sendBookingConfirmationHostEmail } from './emailService.js';
+import { User } from '../models/User.js';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed'];
 
@@ -42,6 +44,13 @@ async function hasConflictingBooking(unitId, newStart, newEnd) {
  * @param {number} totalHours
  */
 function computeTotalPrice(unit, totalHours) {
+  // Under 24 hours: use hourly rate (pricePerDay / 24)
+  if (totalHours < 24) {
+    const hourlyRate = unit.pricePerDay / 24;
+    return Math.round(totalHours * hourlyRate * 100) / 100;
+  }
+  
+  // 24 hours or more: use daily rate (round up to full days)
   const billedDays = Math.ceil(totalHours / 24);
   return Math.round(billedDays * unit.pricePerDay * 100) / 100;
 }
@@ -95,8 +104,44 @@ export async function createBooking(userId, body) {
 
   await booking.populate({
     path: 'unit',
-    populate: { path: 'listing', select: 'title city state country isVerified' },
+    populate: { path: 'listing', select: 'title city state country isVerified host' },
   });
+
+  // Send confirmation emails to guest and host
+  try {
+    const guest = await User.findById(userId).select('name email');
+    const host = await User.findById(booking.unit.listing.host).select('name email');
+    
+    if (guest && host) {
+      const checkInDate = new Date(booking.startDate).toLocaleDateString() + ' ' + booking.startTime;
+      const checkOutDate = new Date(booking.endDate).toLocaleDateString() + ' ' + booking.endTime;
+
+      // Send to guest
+      await sendBookingConfirmationGuestEmail(
+        guest.email,
+        guest.name,
+        booking.unit.listing.title,
+        host.name,
+        checkInDate,
+        checkOutDate,
+        booking.totalPrice
+      );
+
+      // Send to host
+      await sendBookingConfirmationHostEmail(
+        host.email,
+        host.name,
+        guest.name,
+        booking.unit.listing.title,
+        checkInDate,
+        checkOutDate,
+        booking.totalPrice
+      );
+    }
+  } catch (err) {
+    console.error('Failed to send booking confirmation emails:', err);
+    // Don't fail the booking creation if email fails
+  }
 
   return booking;
 }

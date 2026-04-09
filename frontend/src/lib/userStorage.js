@@ -26,6 +26,11 @@ export function isUserHost() {
   return user?.role === 'host';
 }
 
+export function isUserAdmin() {
+  const user = getStoredUser();
+  return user?.role === 'admin';
+}
+
 export function clearUser() {
   try {
     localStorage.removeItem(USER_KEY);

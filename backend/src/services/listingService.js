@@ -4,6 +4,7 @@ import { Review } from '../models/Review.js';
 import { Unit } from '../models/Unit.js';
 import { User } from '../models/User.js';
 import { AppError } from '../utils/AppError.js';
+import { sendListingCreatedEmail } from './emailService.js';
 
 const UNIT_TYPES = new Set(['room', 'bed', 'entire_place']);
 
@@ -118,6 +119,7 @@ function parseCreatePayload(body) {
 
   const pricePerDay = requireNumber(body?.pricePerDay, 'pricePerDay', { min: 0 });
   const capacity = requireNumber(body?.capacity, 'capacity', { min: 1, integer: true });
+  const quantity = requireNumber(body?.quantity, 'quantity', { min: 1, integer: true });
 
   return {
     listing: {
@@ -133,6 +135,7 @@ function parseCreatePayload(body) {
       unitType,
       pricePerDay,
       capacity,
+      quantity,
     },
   };
 }
@@ -160,6 +163,18 @@ export async function createListingWithUnit(hostId, body) {
       ...unit,
       listing: listingDoc._id,
     });
+
+    // Send email to host
+    try {
+      const host = await User.findById(hostId).select('name email');
+      if (host) {
+        await sendListingCreatedEmail(host.email, host.name, listing.title, listing.city);
+      }
+    } catch (err) {
+      console.error('Failed to send listing created email:', err);
+      // Don't fail listing creation if email fails
+    }
+
     return { listing: listingDoc, unit: unitDoc };
   } catch (err) {
     await Listing.deleteOne({ _id: listingDoc._id });

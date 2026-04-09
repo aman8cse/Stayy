@@ -59,6 +59,9 @@ export function validateListingForm(raw) {
   const capacity = reqNumber(raw.capacity, 'Capacity', { min: 1, integer: true });
   if (!capacity.ok) errors.capacity = capacity.message;
 
+  const quantity = reqNumber(raw.quantity, 'Quantity', { min: 1, integer: true });
+  if (!quantity.ok) errors.quantity = quantity.message;
+
   if (Object.keys(errors).length > 0) {
     return { ok: false, errors };
   }
@@ -77,6 +80,7 @@ export function validateListingForm(raw) {
       unitType: ut,
       pricePerDay: pricePerDay.value,
       capacity: capacity.value,
+      quantity: quantity.value,
     },
   };
 }
