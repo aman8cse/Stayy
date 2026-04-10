@@ -23,9 +23,7 @@ export default function BecomeHost() {
       const { user } = await becomeHost(token);
       storeUser(user);
       setSuccess(true);
-      setTimeout(() => {
-        navigate('/listings/new');
-      }, 2000);
+      setTimeout(() => navigate('/listings/new'), 1800);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to become a host');
     } finally {
@@ -34,89 +32,54 @@ export default function BecomeHost() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-        <header className="mb-8">
-          <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Become a host</h1>
-          <p className="mt-2 text-lg text-slate-600">Start earning by sharing your space on Apna Hostel</p>
-        </header>
+    <div className="app-page space-y-6">
+      <section className="app-panel overflow-hidden p-6 sm:p-8">
+        <span className="app-chip">Host onboarding</span>
+        <h1 className="mt-4 text-3xl font-semibold text-slate-900 dark:text-white sm:text-4xl">Turn your space into a polished hosting experience.</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+          Stayy gives you a cleaner listing workflow, app-style management screens, and a simpler path from setup to bookings.
+        </p>
+      </section>
 
-        <div className="space-y-8">
-          {/* Benefits Section */}
-          <div className="rounded-lg border border-slate-200 bg-white p-8">
-            <h2 className="text-2xl font-semibold text-slate-900 mb-6">Why become a host?</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <div className="text-3xl mb-2">💰</div>
-                <h3 className="font-semibold text-slate-900 mb-2">Earn extra income</h3>
-                <p className="text-slate-600 text-sm">Set your own prices and earn from your unused space</p>
-              </div>
-              <div>
-                <div className="text-3xl mb-2">🏠</div>
-                <h3 className="font-semibold text-slate-900 mb-2">Stay in control</h3>
-                <p className="text-slate-600 text-sm">Manage your availability and approve bookings</p>
-              </div>
-              <div>
-                <div className="text-3xl mb-2">🤝</div>
-                <h3 className="font-semibold text-slate-900 mb-2">Meet people</h3>
-                <p className="text-slate-600 text-sm">Connect with travelers and locals in your community</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Requirements Section */}
-          <div className="rounded-lg border border-slate-200 bg-white p-8">
-            <h2 className="text-2xl font-semibold text-slate-900 mb-6">Host requirements</h2>
-            <ul className="space-y-3 text-slate-700">
-              <li className="flex items-start gap-3">
-                <span className="text-green-600 font-bold">✓</span>
-                <span>Must be at least 18 years old</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-green-600 font-bold">✓</span>
-                <span>Valid email address and phone number</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-green-600 font-bold">✓</span>
-                <span>Provide accurate listing information</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-green-600 font-bold">✓</span>
-                <span>Maintain a safe and clean space</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* CTA Section */}
-          <div className="rounded-lg bg-gradient-to-r from-brand-50 to-brand-100 border border-brand-200 p-8 text-center">
-            {error && (
-              <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                {error}
-              </div>
-            )}
-            
-            {success ? (
-              <div className="text-center">
-                <div className="text-5xl mb-4">🎉</div>
-                <h3 className="text-2xl font-semibold text-slate-900 mb-2">Welcome to Apna Hostel hosts!</h3>
-                <p className="text-slate-600 mb-4">You're now a host. Let's create your first listing.</p>
-                <p className="text-sm text-slate-500">Redirecting...</p>
-              </div>
-            ) : (
-              <>
-                <p className="text-slate-700 mb-6">Ready to start hosting? Click below to activate your host account and create your first listing.</p>
-                <button
-                  onClick={handleBecomeHost}
-                  disabled={loading}
-                  className="rounded-lg bg-brand-600 px-8 py-3 font-semibold text-white hover:bg-brand-700 disabled:opacity-50 transition inline-block"
-                >
-                  {loading ? 'Activating...' : 'Become a host'}
-                </button>
-              </>
-            )}
-          </div>
+      <section className="grid gap-4 md:grid-cols-3">
+        <div className="app-panel-soft p-5">
+          <p className="text-lg font-semibold text-slate-900 dark:text-white">Earn more intentionally</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Set your own rates and open only the inventory you actually want to host.</p>
         </div>
-      </div>
+        <div className="app-panel-soft p-5">
+          <p className="text-lg font-semibold text-slate-900 dark:text-white">Manage like an app</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Use streamlined listing, booking, and editing flows designed for mobile first.</p>
+        </div>
+        <div className="app-panel-soft p-5">
+          <p className="text-lg font-semibold text-slate-900 dark:text-white">Build guest trust</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Publish accurate details, amenities, and pricing in a clean verified experience.</p>
+        </div>
+      </section>
+
+      <section className="app-panel p-6 sm:p-8">
+        {error && (
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+            {error}
+          </div>
+        )}
+
+        {success ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center dark:border-emerald-900/40 dark:bg-emerald-950/30">
+            <p className="text-lg font-semibold text-emerald-800 dark:text-emerald-300">You&apos;re now a host</p>
+            <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-400">Redirecting you to create your first listing...</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-lg font-semibold text-slate-900 dark:text-white">Ready to activate host mode?</p>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Once enabled, you can immediately create and manage listings from your dashboard.</p>
+            </div>
+            <button onClick={handleBecomeHost} disabled={loading} className="app-button-primary">
+              {loading ? 'Activating...' : 'Become a host'}
+            </button>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

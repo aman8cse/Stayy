@@ -1,0 +1,23 @@
+// Common amenities list for rooms
+export const COMMON_AMENITIES = [
+  'WiFi',
+  'AC',
+  'Fan',
+  'Hot Water',
+  'Bed Sheets',
+  'Pillow',
+  'Blanket',
+  'Locker',
+  'Desk',
+  'Chair',
+  'Mirror',
+  'Towel',
+  'Bathroom',
+  'Balcony',
+  'Window',
+  'Phone Charger',
+  'TV',
+  'Fridge',
+  'Microwave',
+  'Kettle',
+];

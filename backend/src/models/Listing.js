@@ -43,6 +43,11 @@ const listingSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    googleMapsUrl: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

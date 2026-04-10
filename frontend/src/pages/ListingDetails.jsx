@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { fetchListingById } from '../api/listings.js';
 import { BookingConflictError, createBooking } from '../api/bookings.js';
 import { getStoredToken } from '../lib/authStorage.js';
+import { listUserBookings } from '../api/auth.js';
 import { estimateBookingTotal } from '../lib/bookingEstimate.js';
 import { ReviewsList, ReviewForm } from '../components/Reviews.jsx';
 
@@ -26,21 +27,21 @@ function todayDateInputValue() {
 
 export default function ListingDetails() {
   const { listingId } = useParams();
-
   const [listing, setListing] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(true);
-
   const [unitId, setUnitId] = useState('');
   const [startDate, setStartDate] = useState(todayDateInputValue);
   const [endDate, setEndDate] = useState(todayDateInputValue);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
-
   const [bookingError, setBookingError] = useState(null);
   const [conflict, setConflict] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [canReview, setCanReview] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState('idle');
+  const [reviewMessage, setReviewMessage] = useState('Sign in and complete a booking to leave a review.');
 
   const load = useCallback(async () => {
     if (!listingId) return;
@@ -63,20 +64,59 @@ export default function ListingDetails() {
     load();
   }, [load]);
 
-  // Only show units with available quantity (quantity > 0)
+  useEffect(() => {
+    let active = true;
+
+    async function loadReviewEligibility() {
+      if (!listingId) return;
+
+      const token = getStoredToken();
+      if (!token) {
+        if (!active) return;
+        setCanReview(false);
+        setReviewStatus('signed_out');
+        setReviewMessage('Sign in and book this listing to leave a review.');
+        return;
+      }
+
+      setReviewStatus('loading');
+      try {
+        const data = await listUserBookings(token);
+        if (!active) return;
+
+        const hasBookingForListing = (data.bookings || []).some(
+          (booking) => booking?.listing?._id === listingId
+        );
+
+        setCanReview(hasBookingForListing);
+        setReviewStatus('ready');
+        setReviewMessage(
+          hasBookingForListing
+            ? ''
+            : 'Only guests with a confirmed booking for this listing can leave a review.'
+        );
+      } catch (err) {
+        if (!active) return;
+        setCanReview(false);
+        setReviewStatus('error');
+        setReviewMessage(err instanceof Error ? err.message : 'Unable to check review eligibility right now.');
+      }
+    }
+
+    loadReviewEligibility();
+
+    return () => {
+      active = false;
+    };
+  }, [listingId, bookingSuccess]);
+
   const units = (listing?.units ?? []).filter((u) => (u.quantity ?? 1) > 0);
   const selectedUnit = useMemo(
     () => units.find((u) => u._id === unitId) ?? units[0] ?? null,
     [units, unitId]
   );
 
-  const { totalHours, totalPrice } = estimateBookingTotal(
-    startDate,
-    endDate,
-    startTime,
-    endTime,
-    selectedUnit
-  );
+  const { totalHours, totalPrice } = estimateBookingTotal(startDate, endDate, startTime, endTime, selectedUnit);
 
   async function onBook(e) {
     e.preventDefault();
@@ -86,7 +126,7 @@ export default function ListingDetails() {
 
     const token = getStoredToken();
     if (!token) {
-      setBookingError('Sign in required. Save your JWT in localStorage as stayy_token.');
+      setBookingError('Sign in required to complete a booking.');
       return;
     }
     if (!selectedUnit?._id) {
@@ -94,7 +134,7 @@ export default function ListingDetails() {
       return;
     }
     if (totalHours == null || totalPrice == null) {
-      setBookingError('Choose valid dates and times (end must be after start).');
+      setBookingError('Choose valid dates and times. End time must be after start time.');
       return;
     }
 
@@ -111,6 +151,9 @@ export default function ListingDetails() {
         token
       );
       setBookingSuccess(true);
+      setCanReview(true);
+      setReviewStatus('ready');
+      setReviewMessage('');
     } catch (err) {
       if (err instanceof BookingConflictError) {
         setConflict(true);
@@ -123,209 +166,226 @@ export default function ListingDetails() {
   }
 
   if (loading) {
-    return (
-      <div className="mx-auto max-w-4xl px-4 py-16 text-center text-slate-600">
-        Loading listing…
-      </div>
-    );
+    return <div className="app-page text-center text-slate-600 dark:text-slate-300">Loading listing...</div>;
   }
 
   if (loadError || !listing) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-10">
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+      <div className="app-page">
+        <div className="rounded-3xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
           {loadError ?? 'Listing not found.'}
         </div>
-        <Link to="/" className="mt-6 inline-block text-sm font-medium text-brand-700 hover:underline">
-          ← Back to search
+        <Link to="/" className="mt-6 inline-flex text-sm font-medium text-teal-600 dark:text-teal-300">
+          Back to search
         </Link>
       </div>
     );
   }
 
   const host = listing.host;
+  const primaryImage = selectedUnit?.images?.find((img) => img.isThumbnail)?.url || selectedUnit?.images?.[0]?.url;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      <Link to="/" className="text-sm font-medium text-brand-700 hover:underline">
-        ← Back to search
+    <div className="app-page space-y-6">
+      <Link to="/" className="inline-flex text-sm font-medium text-teal-600 dark:text-teal-300">
+        Back to search
       </Link>
 
-      <header className="mt-6 space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {listing.isVerified ? (
-            <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-800 ring-1 ring-brand-600/15">
-              Verified listing
-            </span>
-          ) : null}
-        </div>
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{listing.title}</h1>
-        <p className="text-slate-600">
-          {[listing.city, listing.state, listing.country].filter(Boolean).join(', ')}
-        </p>
-        {listing.averageRating != null ? (
-          <p className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-900">{listing.averageRating.toFixed(1)}</span> avg
-            rating
-            {listing.reviewCount ? (
-              <span className="text-slate-500"> · {listing.reviewCount} reviews</span>
-            ) : null}
-          </p>
-        ) : null}
-      </header>
+      <section className="app-panel overflow-hidden p-5 sm:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-3xl">
+            <div className="flex flex-wrap items-center gap-2">
+              {listing.isVerified ? <span className="app-chip">Verified listing</span> : null}
+              {host?.isVerified ? <span className="app-chip">Verified host</span> : null}
+            </div>
+            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+              {listing.title}
+            </h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              {[listing.city, listing.state, listing.country].filter(Boolean).join(', ')}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {listing.averageRating != null ? (
+                <span className="app-chip">{listing.averageRating.toFixed(1)} rating · {listing.reviewCount || 0} reviews</span>
+              ) : (
+                <span className="app-chip">No reviews yet</span>
+              )}
+              {host ? <span className="app-chip">Hosted by {host.name}</span> : null}
+            </div>
+          </div>
 
-      <section className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">About</h2>
-        <p className="mt-3 whitespace-pre-wrap text-slate-700">{listing.description}</p>
+          <div className="app-panel-soft min-w-[180px] p-4">
+            <p className="text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Starting from</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
+              {formatMoney(selectedUnit?.pricePerDay)}
+            </p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">per day</p>
+          </div>
+        </div>
       </section>
 
-      {host ? (
-        <section className="mt-6 flex flex-wrap items-center gap-2 text-sm text-slate-600">
-          <span className="font-medium text-slate-800">Host:</span> {host.name}
-          {host.isVerified ? (
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-600/15">
-              Verified host
-            </span>
-          ) : null}
-        </section>
-      ) : null}
-
-      <section className="mt-10 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
-        <h2 className="text-lg font-semibold text-slate-900">Book this space</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Under 24 hours total uses the hourly rate; 24 hours or more uses the daily rate (same as the API).
-        </p>
-
-        {units.length === 0 ? (
-          <p className="mt-4 text-sm text-amber-800">This listing has no units available to book yet.</p>
-        ) : (
-          <form onSubmit={onBook} className="mt-6 space-y-5">
-            {units.length > 1 ? (
-              <div>
-                <label htmlFor="unit" className="block text-sm font-medium text-slate-700">
-                  Unit
-                </label>
-                <select
-                  id="unit"
-                  value={unitId}
-                  onChange={(e) => setUnitId(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none ring-brand-500/30 focus:border-brand-500 focus:ring-4"
-                >
-                  {units.map((u) => (
-                    <option key={u._id} value={u._id}>
-                      {u.unitType?.replace('_', ' ') ?? 'Unit'} · ${u.pricePerDay}/day · cap {u.capacity} · qty {u.quantity ?? 1}
-                    </option>
-                  ))}
-                </select>
+      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="space-y-6">
+          <section className="app-panel overflow-hidden">
+            <div className="grid gap-3 p-3 md:grid-cols-[1.6fr_0.8fr]">
+              <div className="overflow-hidden rounded-[24px] bg-slate-100 dark:bg-slate-900/60">
+                {primaryImage ? (
+                  <img src={primaryImage} alt={listing.title} className="h-full min-h-[260px] w-full object-cover" />
+                ) : (
+                  <div className="flex min-h-[260px] items-center justify-center text-slate-400 dark:text-slate-600">
+                    No image available
+                  </div>
+                )}
               </div>
-            ) : null}
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="startDate" className="block text-sm font-medium text-slate-700">
-                  Start date
-                </label>
-                <input
-                  id="startDate"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none ring-brand-500/30 focus:border-brand-500 focus:ring-4"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="endDate" className="block text-sm font-medium text-slate-700">
-                  End date
-                </label>
-                <input
-                  id="endDate"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none ring-brand-500/30 focus:border-brand-500 focus:ring-4"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="startTime" className="block text-sm font-medium text-slate-700">
-                  Start time
-                </label>
-                <input
-                  id="startTime"
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none ring-brand-500/30 focus:border-brand-500 focus:ring-4"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="endTime" className="block text-sm font-medium text-slate-700">
-                  End time
-                </label>
-                <input
-                  id="endTime"
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none ring-brand-500/30 focus:border-brand-500 focus:ring-4"
-                  required
-                />
+              <div className="grid gap-3">
+                {(selectedUnit?.images || []).slice(1, 4).map((img, idx) => (
+                  <div key={idx} className="overflow-hidden rounded-[20px] bg-slate-100 dark:bg-slate-900/60">
+                    <img src={img.url} alt={`${listing.title} ${idx + 2}`} className="h-24 w-full object-cover md:h-full" />
+                  </div>
+                ))}
+                {(selectedUnit?.images?.length || 0) <= 1 ? (
+                  <div className="app-panel-soft flex items-center justify-center p-4 text-sm text-slate-500 dark:text-slate-400">
+                    Add more photos to make this stay shine.
+                  </div>
+                ) : null}
               </div>
             </div>
+          </section>
 
-            <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Estimated total</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">{formatMoney(totalPrice)}</p>
-              {totalHours != null ? (
-                <p className="mt-1 text-sm text-slate-600">{totalHours} hours</p>
+          <section className="app-panel p-6">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">About this stay</h2>
+            <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-300">{listing.description}</p>
+          </section>
+
+          {selectedUnit?.amenities?.length > 0 ? (
+            <section className="app-panel p-6">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Amenities</h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {selectedUnit.amenities.map((amenity, idx) => (
+                  <div key={idx} className="app-panel-soft flex items-center gap-3 p-3 text-sm text-slate-700 dark:text-slate-300">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-300">✓</span>
+                    {amenity}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="app-panel p-6">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Reviews</h2>
+            <div className="mt-6 space-y-6">
+              <ReviewsList listingId={listing._id} />
+            </div>
+            <div className="mt-8">
+              {reviewStatus === 'loading' ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                  Checking whether you can review this stay...
+                </div>
+              ) : canReview ? (
+                <ReviewForm listingId={listing._id} />
               ) : (
-                <p className="mt-1 text-sm text-slate-500">Enter a valid range to see price</p>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                  {reviewMessage}
+                </div>
               )}
             </div>
-
-            {conflict ? (
-              <div
-                className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900"
-                role="alert"
-              >
-                Already booked
-              </div>
-            ) : null}
-
-            {bookingError ? (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                {bookingError}
-              </div>
-            ) : null}
-
-            {bookingSuccess ? (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                Booking confirmed. Check your trips under account history.
-              </div>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={submitting || units.length === 0}
-              className="w-full rounded-xl bg-brand-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-8"
-            >
-              {submitting ? 'Booking…' : 'Book'}
-            </button>
-          </form>
-        )}
-      </section>
-
-      <section className="mt-10 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
-        <h2 className="text-lg font-semibold text-slate-900">Reviews</h2>
-        <div className="mt-6 space-y-6">
-          <ReviewsList listingId={listing._id} />
+          </section>
         </div>
-        <div className="mt-8">
-          <ReviewForm listingId={listing._id} />
+
+        <div className="space-y-6">
+          <section className="app-panel p-6">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Book this space</h2>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Under 24 hours uses the hourly rate. Longer stays are billed by full days.
+            </p>
+
+            {units.length === 0 ? (
+              <p className="mt-4 text-sm text-amber-700 dark:text-amber-300">This listing has no units available to book yet.</p>
+            ) : (
+              <form onSubmit={onBook} className="mt-6 space-y-4">
+                {units.length > 1 ? (
+                  <div>
+                    <label htmlFor="unit" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                      Unit
+                    </label>
+                    <select
+                      id="unit"
+                      value={unitId}
+                      onChange={(e) => setUnitId(e.target.value)}
+                      className="app-input mt-1.5"
+                    >
+                      {units.map((u) => (
+                        <option key={u._id} value={u._id}>
+                          {u.unitType?.replace('_', ' ') ?? 'Unit'} · {formatMoney(u.pricePerDay)}/day · cap {u.capacity} · qty {u.quantity ?? 1}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="startDate" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Start date</label>
+                    <input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="app-input mt-1.5" required />
+                  </div>
+                  <div>
+                    <label htmlFor="endDate" className="block text-sm font-medium text-slate-700 dark:text-slate-200">End date</label>
+                    <input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="app-input mt-1.5" required />
+                  </div>
+                  <div>
+                    <label htmlFor="startTime" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Start time</label>
+                    <input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="app-input mt-1.5" required />
+                  </div>
+                  <div>
+                    <label htmlFor="endTime" className="block text-sm font-medium text-slate-700 dark:text-slate-200">End time</label>
+                    <input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="app-input mt-1.5" required />
+                  </div>
+                </div>
+
+                <div className="app-panel-soft p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Estimated total</p>
+                  <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{formatMoney(totalPrice)}</p>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    {totalHours != null ? `${totalHours} hours selected` : 'Choose a valid date/time range'}
+                  </p>
+                </div>
+
+                {conflict ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+                    This unit is already booked for part of your selected time.
+                  </div>
+                ) : null}
+                {bookingError ? (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+                    {bookingError}
+                  </div>
+                ) : null}
+                {bookingSuccess ? (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    Booking confirmed. You can find it in your trips.
+                  </div>
+                ) : null}
+
+                <button type="submit" disabled={submitting || units.length === 0} className="app-button-primary w-full">
+                  {submitting ? 'Booking...' : 'Book now'}
+                </button>
+              </form>
+            )}
+          </section>
+
+          {listing.googleMapsUrl ? (
+            <section className="app-panel p-6">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Location</h2>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                Open the shared map link to view the exact area for this stay.
+              </p>
+              <a href={listing.googleMapsUrl} target="_blank" rel="noopener noreferrer" className="app-button-secondary mt-4">
+                Open in Google Maps
+              </a>
+            </section>
+          ) : null}
         </div>
-      </section>
+      </div>
     </div>
   );
 }

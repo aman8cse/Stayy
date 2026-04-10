@@ -5,11 +5,7 @@ import { storeToken } from '../lib/authStorage.js';
 import { storeUser } from '../lib/userStorage.js';
 
 function inputClass(hasError) {
-  return [
-    'mt-1.5 w-full rounded-lg border bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none transition',
-    'ring-brand-500/30 placeholder:text-slate-400 focus:ring-2',
-    hasError ? 'border-red-300 focus:border-red-500' : 'border-slate-200 focus:border-brand-500',
-  ].join(' ');
+  return ['app-input mt-1.5', hasError ? 'border-red-300 focus:border-red-500' : ''].join(' ');
 }
 
 export default function Login() {
@@ -54,77 +50,82 @@ export default function Login() {
 
   function onBlur(name) {
     setTouched((t) => ({ ...t, [name]: true }));
-    const newErrors = validateForm();
-    setErrors(newErrors);
+    setErrors(validateForm());
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">Log in</h1>
-          <p className="mt-2 text-slate-600">Access your Apna Hostel account</p>
+    <div className="app-page flex min-h-[calc(100vh-7rem)] items-center justify-center">
+      <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-slate-900 via-teal-900 to-cyan-700 p-8 text-white shadow-2xl shadow-slate-900/20 lg:block">
+          <p className="text-xs uppercase tracking-[0.28em] text-white/70">Stayy Mobile</p>
+          <h1 className="mt-6 text-4xl font-semibold leading-tight">Your stays, bookings, and hosting tools in one place.</h1>
+          <p className="mt-4 max-w-md text-sm leading-6 text-white/78">
+            Sign in to browse smarter, manage trips faster, and keep every part of your stay organized in a clean app-style flow.
+          </p>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
-          {serverError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-              {serverError}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Email</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => update('email', e.target.value)}
-              onBlur={() => onBlur('email')}
-              className={inputClass(!!errors.email && touched.email)}
-              placeholder="you@example.com"
-              disabled={submitting}
-            />
-            {errors.email && touched.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-            )}
+        <div className="app-panel w-full p-6 sm:p-8">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Welcome back</h1>
+            <p className="mt-2 text-slate-600 dark:text-slate-300">Log in to continue to Stayy</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Password</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => update('password', e.target.value)}
-              onBlur={() => onBlur('password')}
-              className={inputClass(!!errors.password && touched.password)}
-              placeholder="••••••••"
-              disabled={submitting}
-            />
-            {errors.password && touched.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+          <form onSubmit={onSubmit} className="space-y-4">
+            {serverError && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+                {serverError}
+              </div>
             )}
-            <div className="mt-2 text-right">
-              <Link to="/forgot-password" className="text-xs font-medium text-brand-600 hover:text-brand-700">
-                Forgot password?
-              </Link>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Email</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => update('email', e.target.value)}
+                onBlur={() => onBlur('email')}
+                className={inputClass(!!errors.email && touched.email)}
+                placeholder="you@example.com"
+                disabled={submitting}
+              />
+              {errors.email && touched.email && (
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.email}</p>
+              )}
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-700 disabled:opacity-50 transition"
-          >
-            {submitting ? 'Logging in...' : 'Log in'}
-          </button>
-        </form>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Password</label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => update('password', e.target.value)}
+                onBlur={() => onBlur('password')}
+                className={inputClass(!!errors.password && touched.password)}
+                placeholder="••••••••"
+                disabled={submitting}
+              />
+              {errors.password && touched.password && (
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.password}</p>
+              )}
+              <div className="mt-3 text-right">
+                <Link to="/forgot-password" className="text-sm font-medium text-teal-600 hover:text-teal-700 dark:text-teal-300 dark:hover:text-teal-200">
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
 
-        <p className="mt-4 text-center text-sm text-slate-600">
-          Don't have an account?{' '}
-          <Link to="/signup" className="font-medium text-brand-600 hover:text-brand-700">
-            Sign up
-          </Link>
-        </p>
+            <button type="submit" disabled={submitting} className="app-button-primary w-full">
+              {submitting ? 'Logging in...' : 'Log in'}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+            Don't have an account?{' '}
+            <Link to="/signup" className="font-medium text-teal-600 hover:text-teal-700 dark:text-teal-300">
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 const UNIT_TYPES = new Set(['room', 'bed', 'entire_place']);
+const COMMON_AMENITIES = ['WiFi', 'AC', 'Fan', 'Hot Water', 'Bed Sheets', 'Pillow', 'Blanket', 'Locker', 'Desk', 'Chair', 'Mirror', 'Towel', 'Bathroom', 'Balcony', 'Window', 'Phone Charger', 'TV', 'Fridge', 'Microwave', 'Kettle'];
 
 function reqStr(value, field, max) {
   const s = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
@@ -62,6 +63,37 @@ export function validateListingForm(raw) {
   const quantity = reqNumber(raw.quantity, 'Quantity', { min: 1, integer: true });
   if (!quantity.ok) errors.quantity = quantity.message;
 
+  // Optional: Google Maps URL validation
+  let googleMapsUrl = '';
+  if (raw.googleMapsUrl && typeof raw.googleMapsUrl === 'string' && raw.googleMapsUrl.trim()) {
+    const url = raw.googleMapsUrl.trim();
+    if (url.length > 500) {
+      errors.googleMapsUrl = 'Google Maps URL is too long';
+    } else {
+      googleMapsUrl = url;
+    }
+  }
+
+  // Optional: Images validation
+  let images = [];
+  if (Array.isArray(raw.images) && raw.images.length > 0) {
+    images = raw.images
+      .filter((img) => typeof img === 'string' && img.trim())
+      .map((img) => img.trim());
+    if (images.length > 10) {
+      errors.images = 'Maximum 10 images allowed';
+    }
+  }
+
+  // Optional: Amenities validation
+  let amenities = [];
+  if (Array.isArray(raw.amenities) && raw.amenities.length > 0) {
+    amenities = raw.amenities.filter((a) => a && a.trim()).map((a) => a.trim());
+    if (amenities.length > 15) {
+      errors.amenities = 'Maximum 15 amenities allowed';
+    }
+  }
+
   if (Object.keys(errors).length > 0) {
     return { ok: false, errors };
   }
@@ -77,10 +109,13 @@ export function validateListingForm(raw) {
       country: country.value,
       latitude: latitude.value,
       longitude: longitude.value,
+      googleMapsUrl,
       unitType: ut,
       pricePerDay: pricePerDay.value,
       capacity: capacity.value,
       quantity: quantity.value,
+      images,
+      amenities,
     },
   };
 }

@@ -28,6 +28,24 @@ const unitSchema = new mongoose.Schema(
       min: 1,
       default: 1,
     },
+    images: [
+      {
+        url: {
+          type: String,
+          required: true,
+        },
+        isThumbnail: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
+    amenities: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
   },
   { timestamps: true }
 );

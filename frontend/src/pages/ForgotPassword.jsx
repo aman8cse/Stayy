@@ -3,11 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { forgotPassword } from '../api/auth.js';
 
 function inputClass(hasError) {
-  return [
-    'mt-1.5 w-full rounded-lg border bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none transition',
-    'ring-brand-500/30 placeholder:text-slate-400 focus:ring-2',
-    hasError ? 'border-red-300 focus:border-red-500' : 'border-slate-200 focus:border-brand-500',
-  ].join(' ');
+  return ['app-input mt-1.5', hasError ? 'border-red-300 focus:border-red-500' : ''].join(' ');
 }
 
 export default function ForgotPassword() {
@@ -41,7 +37,6 @@ export default function ForgotPassword() {
     try {
       await forgotPassword(email);
       setSuccess(true);
-      // Auto-redirect after 2 seconds
       setTimeout(() => {
         navigate('/reset-password', { state: { email } });
       }, 2000);
@@ -53,75 +48,59 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-8">
-      <div className="max-w-md w-full">
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm ring-1 ring-slate-900/5">
-          <h1 className="text-2xl font-semibold text-slate-900 text-center mb-2">
-            Forgot your password?
-          </h1>
-          <p className="text-sm text-slate-600 text-center mb-6">
-            Enter your email address and we'll send you a code to reset your password.
-          </p>
+    <div className="app-page flex min-h-[calc(100vh-7rem)] items-center justify-center">
+      <div className="app-panel w-full max-w-xl p-6 sm:p-8">
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Forgot your password?</h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          Enter your email and we&apos;ll send a verification code so you can set a new password.
+        </p>
 
-          {success ? (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-4 text-center">
-              <p className="font-medium text-emerald-800 mb-2">✓ Code sent!</p>
-              <p className="text-sm text-emerald-700">
-                Check your email for the reset code. Redirecting to password reset page…
-              </p>
+        {success ? (
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-center dark:border-emerald-900/40 dark:bg-emerald-950/30">
+            <p className="font-medium text-emerald-800 dark:text-emerald-300">Code sent successfully</p>
+            <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-400">
+              Check your inbox. We&apos;re taking you to the reset screen now.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={onSubmit} className="mt-6 space-y-4">
+            {serverError && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+                {serverError}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError(null);
+                }}
+                onBlur={validateEmail}
+                className={inputClass(Boolean(error))}
+              />
+              {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
             </div>
-          ) : (
-            <>
-              {serverError && (
-                <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                  {serverError}
-                </div>
-              )}
 
-              <form onSubmit={onSubmit} className="space-y-5">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-                    Email address
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setError(null);
-                    }}
-                    onBlur={validateEmail}
-                    className={inputClass(Boolean(error))}
-                  />
-                  {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {submitting ? 'Sending code…' : 'Send reset code'}
-                </button>
-              </form>
-
-              <p className="mt-6 text-center text-sm text-slate-600">
-                Remember your password?{' '}
-                <Link to="/login" className="font-medium text-brand-600 hover:underline">
-                  Log in
-                </Link>
-              </p>
-            </>
-          )}
-        </div>
-
-        {success && (
-          <p className="mt-6 text-center text-xs text-slate-500">
-            If you didn't receive the code, check your spam folder.
-          </p>
+            <button type="submit" disabled={submitting} className="app-button-primary w-full">
+              {submitting ? 'Sending code...' : 'Send reset code'}
+            </button>
+          </form>
         )}
+
+        <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+          Remember your password?{' '}
+          <Link to="/login" className="font-medium text-teal-600 hover:text-teal-700 dark:text-teal-300">
+            Log in
+          </Link>
+        </p>
       </div>
     </div>
   );

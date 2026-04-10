@@ -46,7 +46,16 @@ export async function listUserBookings(token) {
     const message = data?.message ?? `Request failed (${res.status})`;
     throw new Error(message);
   }
-  return data;
+
+  return {
+    ...data,
+    bookings: Array.isArray(data?.bookings)
+      ? data.bookings.map((booking) => ({
+          ...booking,
+          listing: booking?.listing ?? booking?.unit?.listing ?? null,
+        }))
+      : [],
+  };
 }
 
 export async function verifyOTP(email, otpCode) {

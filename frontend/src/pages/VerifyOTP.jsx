@@ -5,18 +5,13 @@ import { storeToken } from '../lib/authStorage.js';
 import { storeUser } from '../lib/userStorage.js';
 
 function inputClass(hasError) {
-  return [
-    'mt-1.5 w-full rounded-lg border bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none transition',
-    'ring-brand-500/30 placeholder:text-slate-400 focus:ring-2',
-    hasError ? 'border-red-300 focus:border-red-500' : 'border-slate-200 focus:border-brand-500',
-  ].join(' ');
+  return ['app-input mt-1.5', hasError ? 'border-red-300 focus:border-red-500' : ''].join(' ');
 }
 
 export default function VerifyOTP() {
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email || '';
-
   const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState(null);
   const [serverError, setServerError] = useState(null);
@@ -26,15 +21,13 @@ export default function VerifyOTP() {
 
   if (!email) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="max-w-md w-full">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            <p className="font-medium">Invalid access</p>
-            <p className="mt-2">Please sign up first to verify your email.</p>
-            <Link to="/signup" className="mt-3 inline-block text-sm font-medium text-amber-700 hover:underline">
-              Go to Sign Up →
-            </Link>
-          </div>
+      <div className="app-page flex min-h-[calc(100vh-7rem)] items-center justify-center">
+        <div className="app-panel w-full max-w-md p-6">
+          <p className="font-medium text-slate-900 dark:text-white">Invalid access</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Please sign up first to verify your email.</p>
+          <Link to="/signup" className="mt-4 inline-block text-sm font-medium text-teal-600 dark:text-teal-300">
+            Go to Sign Up
+          </Link>
         </div>
       </div>
     );
@@ -84,80 +77,59 @@ export default function VerifyOTP() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-8">
-      <div className="max-w-md w-full">
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm ring-1 ring-slate-900/5">
-          <h1 className="text-2xl font-semibold text-slate-900 text-center mb-2">
-            Verify your email
-          </h1>
-          <p className="text-sm text-slate-600 text-center mb-6">
-            We've sent a 6-digit code to <strong>{email}</strong>
-          </p>
+    <div className="app-page flex min-h-[calc(100vh-7rem)] items-center justify-center">
+      <div className="app-panel w-full max-w-md p-6 sm:p-8">
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Verify your email</h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          We sent a 6-digit verification code to <span className="font-medium">{email}</span>.
+        </p>
 
-          {serverError && (
-            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-              {serverError}
-            </div>
-          )}
+        {serverError && (
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+            {serverError}
+          </div>
+        )}
 
-          {resendSuccess && (
-            <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              {resendSuccess}
-            </div>
-          )}
+        {resendSuccess && (
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+            {resendSuccess}
+          </div>
+        )}
 
-          <form onSubmit={onSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="otpCode" className="block text-sm font-medium text-slate-700">
-                Verification code
-              </label>
-              <input
-                id="otpCode"
-                type="text"
-                maxLength="6"
-                inputMode="numeric"
-                placeholder="000000"
-                value={otpCode}
-                onChange={(e) => {
-                  setOtpCode(e.target.value.replace(/\D/g, ''));
-                  setError(null);
-                }}
-                className={inputClass(Boolean(error))}
-              />
-              {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? 'Verifying…' : 'Verify email'}
-            </button>
-          </form>
-
-          <div className="mt-6 border-t border-slate-100 pt-6">
-            <p className="text-sm text-slate-600 text-center mb-3">
-              Didn't receive the code?
-            </p>
-            <button
-              onClick={handleResend}
-              disabled={resending}
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {resending ? 'Resending…' : 'Resend OTP'}
-            </button>
+        <form onSubmit={onSubmit} className="mt-6 space-y-5">
+          <div>
+            <label htmlFor="otpCode" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+              Verification code
+            </label>
+            <input
+              id="otpCode"
+              type="text"
+              maxLength="6"
+              inputMode="numeric"
+              placeholder="000000"
+              value={otpCode}
+              onChange={(e) => {
+                setOtpCode(e.target.value.replace(/\D/g, ''));
+                setError(null);
+              }}
+              className={inputClass(Boolean(error))}
+            />
+            {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
           </div>
 
-          <p className="mt-6 text-center text-xs text-slate-500">
-            This code expires in 10 minutes.
-          </p>
-        </div>
+          <button type="submit" disabled={submitting} className="app-button-primary w-full">
+            {submitting ? 'Verifying...' : 'Verify email'}
+          </button>
+        </form>
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Wrong email? Go back to{' '}
-          <Link to="/signup" className="font-medium text-brand-600 hover:underline">
-            Sign Up
+        <button onClick={handleResend} disabled={resending} className="app-button-secondary mt-4 w-full">
+          {resending ? 'Resending...' : 'Resend OTP'}
+        </button>
+
+        <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
+          Wrong email?{' '}
+          <Link to="/signup" className="font-medium text-teal-600 dark:text-teal-300">
+            Go back
           </Link>
         </p>
       </div>

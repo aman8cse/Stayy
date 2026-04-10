@@ -30,17 +30,6 @@ function formatDateTime(dateStr, timeStr) {
   }
 }
 
-function getStatusBadgeClass(booking) {
-  const now = new Date();
-  const endDate = new Date(booking.endDate);
-  const [endHours] = booking.endTime.split(':').map(Number);
-  endDate.setHours(endHours);
-
-  if (now > endDate) return 'bg-slate-100 text-slate-800';
-  if (now >= new Date(booking.startDate)) return 'bg-blue-100 text-blue-800';
-  return 'bg-green-100 text-green-800';
-}
-
 function getStatusLabel(booking) {
   const now = new Date();
   const endDate = new Date(booking.endDate);
@@ -81,87 +70,67 @@ export default function MyBookings() {
     load();
   }, [navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="text-center">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <header className="mb-8">
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">My bookings</h1>
-          <p className="mt-1 text-slate-600">View and manage your reservations</p>
-        </header>
+    <div className="app-page space-y-6">
+      <section className="app-panel p-6 sm:p-8">
+        <p className="text-sm text-slate-500 dark:text-slate-400">Trips</p>
+        <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">My bookings</h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Track upcoming stays, in-progress reservations, and past visits.</p>
+      </section>
 
-        {error && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-            {error}
-          </div>
-        )}
-
-        {bookings.length === 0 ? (
-          <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
-            <p className="text-slate-600 mb-4">You haven't made any bookings yet</p>
-            <Link to="/" className="inline-block rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 transition">
-              Browse listings
-            </Link>
-          </div>
-        ) : (
-          <div className="grid gap-6">
-            {bookings.map((booking) => (
-              <div key={booking._id} className="rounded-lg border border-slate-200 bg-white p-6 hover:border-slate-300 transition">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-lg font-semibold text-slate-900">
-                        {booking.listing?.title || 'Listing'}
-                      </h3>
-                      <span className={`inline-block px-2.5 py-1 rounded text-xs font-medium ${getStatusBadgeClass(booking)}`}>
-                        {getStatusLabel(booking)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-600 mb-3">
-                      {booking.listing?.city}, {booking.listing?.state}
-                    </p>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-slate-600">Check-in</p>
-                        <p className="font-medium text-slate-900">
-                          {formatDateTime(booking.startDate, booking.startTime)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600">Check-out</p>
-                        <p className="font-medium text-slate-900">
-                          {formatDateTime(booking.endDate, booking.endTime)}
-                        </p>
-                      </div>
-                    </div>
+      {loading ? (
+        <div className="app-panel p-8 text-center text-slate-600 dark:text-slate-300">Loading bookings...</div>
+      ) : error ? (
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+          {error}
+        </div>
+      ) : bookings.length === 0 ? (
+        <div className="app-panel p-10 text-center">
+          <p className="text-lg font-medium text-slate-900 dark:text-white">No bookings yet</p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Browse listings and make your first reservation.</p>
+          <Link to="/" className="app-button-primary mt-6">
+            Browse listings
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {bookings.map((booking) => (
+            <div key={booking._id} className="app-panel p-5 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                      {booking.listing?.title || 'Listing'}
+                    </h2>
+                    <span className="app-chip">{getStatusLabel(booking)}</span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-slate-600">Total paid</p>
-                    <p className="text-2xl font-bold text-slate-900">
-                      {formatMoney(booking.totalPrice)}
-                    </p>
-                    <Link
-                      to={`/listings/${booking.listing?._id}`}
-                      className="mt-3 inline-block text-sm text-brand-600 hover:text-brand-700 font-medium"
-                    >
-                      View listing
-                    </Link>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    {booking.listing?.city}, {booking.listing?.state}
+                  </p>
+                  <div className="mt-4 grid gap-3 text-sm text-slate-700 dark:text-slate-300 sm:grid-cols-2">
+                    <div className="app-panel-soft p-3">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Check-in</p>
+                      <p className="mt-2 font-medium">{formatDateTime(booking.startDate, booking.startTime)}</p>
+                    </div>
+                    <div className="app-panel-soft p-3">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Check-out</p>
+                      <p className="mt-2 font-medium">{formatDateTime(booking.endDate, booking.endTime)}</p>
+                    </div>
                   </div>
                 </div>
+
+                <div className="sm:w-48 sm:text-right">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Total paid</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{formatMoney(booking.totalPrice)}</p>
+                  <Link to={`/listings/${booking.listing?._id}`} className="mt-4 inline-flex text-sm font-medium text-teal-600 dark:text-teal-300">
+                    View listing
+                  </Link>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

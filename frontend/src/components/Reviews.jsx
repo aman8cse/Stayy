@@ -11,7 +11,7 @@ function Stars({ rating, onRate }) {
           onClick={() => onRate && onRate(star)}
           disabled={!onRate}
           className={`text-2xl transition ${
-            star <= rating ? 'text-amber-400' : 'text-slate-200'
+            star <= rating ? 'text-amber-400' : 'text-slate-300 dark:text-slate-700'
           } ${onRate ? 'cursor-pointer hover:text-amber-300' : 'cursor-default'}`}
           type="button"
         >
@@ -44,34 +44,39 @@ export function ReviewsList({ listingId }) {
     load();
   }, [listingId]);
 
-  if (loading) return <div className="text-center text-slate-600">Loading reviews...</div>;
-  if (error) return <div className="text-sm text-red-600">{error}</div>;
+  if (loading) {
+    return <div className="text-center text-sm text-slate-500 dark:text-slate-400">Loading reviews...</div>;
+  }
+
+  if (error) {
+    return <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">{error}</div>;
+  }
 
   if (reviews.length === 0) {
-    return <p className="text-slate-600 text-sm">No reviews yet. Be the first to review!</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400">No reviews yet. Be the first to review after your stay.</p>;
   }
 
   return (
     <div className="space-y-4">
       {reviews.map((review) => (
-        <div key={review._id} className="rounded-lg border border-slate-200 p-4">
-          <div className="flex items-start justify-between mb-2">
+        <div key={review._id} className="app-panel-soft p-4">
+          <div className="mb-2 flex items-start justify-between gap-4">
             <div>
-              <p className="font-medium text-slate-900">{review.user?.name || 'Anonymous'}</p>
-              <p className="text-xs text-slate-500">
+              <p className="font-medium text-slate-900 dark:text-white">{review.user?.name || 'Anonymous'}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {new Date(review.createdAt).toLocaleDateString()}
               </p>
             </div>
             <Stars rating={review.rating} />
           </div>
-          <p className="text-slate-700 text-sm">{review.comment}</p>
+          <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">{review.comment}</p>
         </div>
       ))}
     </div>
   );
 }
 
-export function ReviewForm({ listingId, bookingId, onSuccess }) {
+export function ReviewForm({ listingId, onSuccess }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -113,44 +118,40 @@ export function ReviewForm({ listingId, bookingId, onSuccess }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-6">
-      <h3 className="font-semibold text-slate-900">Leave a review</h3>
+    <form onSubmit={handleSubmit} className="app-panel-soft space-y-4 p-5">
+      <h3 className="font-semibold text-slate-900 dark:text-white">Leave a review</h3>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-          Review posted successfully! 🎉
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+          Review posted successfully.
         </div>
       )}
 
       <div>
-        <p className="text-sm font-medium text-slate-700 mb-2">Rating</p>
+        <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-200">Rating</p>
         <Stars rating={rating} onRate={setRating} />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Comment</label>
+        <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Comment</label>
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           disabled={submitting}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 outline-none transition"
-          rows={3}
-          placeholder="Share your experience..."
+          className="app-input min-h-[112px] resize-none"
+          rows={4}
+          placeholder="Share what the stay felt like..."
         />
-        <p className="text-xs text-slate-500 mt-1">{comment.length}/500</p>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{comment.length}/500</p>
       </div>
 
-      <button
-        type="submit"
-        disabled={submitting || success}
-        className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 transition"
-      >
+      <button type="submit" disabled={submitting || success} className="app-button-primary">
         {submitting ? 'Posting...' : 'Post review'}
       </button>
     </form>

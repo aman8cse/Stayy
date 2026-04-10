@@ -121,6 +121,36 @@ function parseCreatePayload(body) {
   const capacity = requireNumber(body?.capacity, 'capacity', { min: 1, integer: true });
   const quantity = requireNumber(body?.quantity, 'quantity', { min: 1, integer: true });
 
+  // Optional: Google Maps URL
+  let googleMapsUrl = '';
+  if (body?.googleMapsUrl && typeof body.googleMapsUrl === 'string' && body.googleMapsUrl.trim()) {
+    const url = body.googleMapsUrl.trim();
+    if (url.length <= 500) {
+      googleMapsUrl = url;
+    }
+  }
+
+  // Optional: Images
+  let images = [];
+  if (Array.isArray(body?.images) && body.images.length > 0) {
+    images = body.images
+      .filter((img) => img && typeof img === 'string' && img.trim())
+      .slice(0, 10)
+      .map((img, idx) => ({
+        url: img.trim(),
+        isThumbnail: idx === 0,
+      }));
+  }
+
+  // Optional: Amenities
+  let amenities = [];
+  if (Array.isArray(body?.amenities) && body.amenities.length > 0) {
+    amenities = body.amenities
+      .filter((a) => a && typeof a === 'string' && a.trim())
+      .slice(0, 15)
+      .map((a) => a.trim());
+  }
+
   return {
     listing: {
       title,
@@ -130,14 +160,112 @@ function parseCreatePayload(body) {
       country,
       latitude,
       longitude,
+      googleMapsUrl,
     },
     unit: {
       unitType,
       pricePerDay,
       capacity,
       quantity,
+      images,
+      amenities,
     },
   };
+}
+
+function parseOptionalNumber(value, field, { min, max, integer = false } = {}) {
+  if (value === undefined) return undefined;
+  return requireNumber(value, field, { min, max, integer });
+}
+
+function parseOptionalString(value, field, { max = 5000 } = {}) {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') {
+    throw new AppError(`${field} must be a string`, 400);
+  }
+  const trimmed = value.trim();
+  if (trimmed.length > max) {
+    throw new AppError(`${field} is too long`, 400);
+  }
+  return trimmed;
+}
+
+function parseUpdatePayload(body) {
+  const listingUpdates = {};
+  const unitUpdates = {};
+
+  const title = parseOptionalString(body?.title, 'title', { max: 200 });
+  if (title !== undefined && title !== '') listingUpdates.title = title;
+
+  const description = parseOptionalString(body?.description, 'description', { max: 10000 });
+  if (description !== undefined && description !== '') listingUpdates.description = description;
+
+  const city = parseOptionalString(body?.city, 'city', { max: 120 });
+  if (city !== undefined && city !== '') listingUpdates.city = city;
+
+  const state = parseOptionalString(body?.state, 'state', { max: 120 });
+  if (state !== undefined && state !== '') listingUpdates.state = state;
+
+  const country = parseOptionalString(body?.country, 'country', { max: 120 });
+  if (country !== undefined && country !== '') listingUpdates.country = country;
+
+  const latitude = parseOptionalNumber(body?.latitude, 'latitude', { min: -90, max: 90 });
+  if (latitude !== undefined) listingUpdates.latitude = latitude;
+
+  const longitude = parseOptionalNumber(body?.longitude, 'longitude', { min: -180, max: 180 });
+  if (longitude !== undefined) listingUpdates.longitude = longitude;
+
+  if (body?.googleMapsUrl !== undefined) {
+    if (typeof body.googleMapsUrl !== 'string') {
+      throw new AppError('googleMapsUrl must be a string', 400);
+    }
+    const url = body.googleMapsUrl.trim();
+    if (url.length > 500) {
+      throw new AppError('googleMapsUrl is too long', 400);
+    }
+    listingUpdates.googleMapsUrl = url;
+  }
+
+  if (body?.unitType !== undefined) {
+    if (typeof body.unitType !== 'string' || !UNIT_TYPES.has(body.unitType)) {
+      throw new AppError('unitType must be room, bed, or entire_place', 400);
+    }
+    unitUpdates.unitType = body.unitType;
+  }
+
+  const pricePerDay = parseOptionalNumber(body?.pricePerDay, 'pricePerDay', { min: 0 });
+  if (pricePerDay !== undefined) unitUpdates.pricePerDay = pricePerDay;
+
+  const capacity = parseOptionalNumber(body?.capacity, 'capacity', { min: 1, integer: true });
+  if (capacity !== undefined) unitUpdates.capacity = capacity;
+
+  const quantity = parseOptionalNumber(body?.quantity, 'quantity', { min: 1, integer: true });
+  if (quantity !== undefined) unitUpdates.quantity = quantity;
+
+  if (body?.images !== undefined) {
+    if (!Array.isArray(body.images)) {
+      throw new AppError('images must be an array', 400);
+    }
+    unitUpdates.images = body.images
+      .filter((img) => typeof img === 'string' && img.trim())
+      .slice(0, 10)
+      .map((img, idx) => ({
+        url: img.trim(),
+        isThumbnail: idx === 0,
+      }));
+  }
+
+  if (body?.amenities !== undefined) {
+    if (!Array.isArray(body.amenities)) {
+      throw new AppError('amenities must be an array', 400);
+    }
+    unitUpdates.amenities = body.amenities
+      .filter((amenity) => typeof amenity === 'string' && amenity.trim())
+      .slice(0, 15)
+      .map((amenity) => amenity.trim());
+  }
+
+  return { listingUpdates, unitUpdates };
 }
 
 /**
@@ -417,31 +545,23 @@ export async function updateListing(listingId, hostId, updates) {
     throw new AppError('You can only update your own listings', 403);
   }
 
-  // Only allow certain fields to be updated
-  const allowedFields = ['title', 'description', 'city', 'state', 'country', 'latitude', 'longitude', 'roomPurpose'];
-  
-  for (const field of allowedFields) {
-    if (field in updates) {
-      if (field === 'latitude' && updates[field] !== undefined) {
-        const n = Number(updates[field]);
-        if (!Number.isFinite(n) || n < -90 || n > 90) {
-          throw new AppError('latitude must be between -90 and 90', 400);
-        }
-        listing[field] = n;
-      } else if (field === 'longitude' && updates[field] !== undefined) {
-        const n = Number(updates[field]);
-        if (!Number.isFinite(n) || n < -180 || n > 180) {
-          throw new AppError('longitude must be between -180 and 180', 400);
-        }
-        listing[field] = n;
-      } else if (typeof updates[field] === 'string') {
-        listing[field] = updates[field];
-      }
-    }
-  }
+  const { listingUpdates, unitUpdates } = parseUpdatePayload(updates ?? {});
+
+  Object.assign(listing, listingUpdates);
 
   await listing.save();
-  return listing;
+
+  if (Object.keys(unitUpdates).length > 0) {
+    const unit = await Unit.findOne({ listing: listing._id }).sort({ createdAt: 1 });
+    if (!unit) {
+      throw new AppError('Unit not found for this listing', 404);
+    }
+
+    Object.assign(unit, unitUpdates);
+    await unit.save();
+  }
+
+  return findListingById(listingId);
 }
 
 /**

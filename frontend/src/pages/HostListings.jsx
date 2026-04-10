@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getHostListings, updateListing, deleteListing } from '../api/listings.js';
+import { getHostListings, deleteListing } from '../api/listings.js';
 import { getStoredToken } from '../lib/authStorage.js';
 
 function formatMoney(n) {
@@ -12,14 +12,15 @@ function formatMoney(n) {
   }).format(n);
 }
 
-function ListingCard({ listing, onDelete, onEdit }) {
+function ListingCard({ listing, onDelete }) {
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const minPrice = listing.units?.[0]?.pricePerDay ?? null;
 
   async function handleDelete() {
     const token = getStoredToken();
     if (!token) return;
-    
+
     setDeleting(true);
     try {
       await deleteListing(listing._id, token);
@@ -31,59 +32,45 @@ function ListingCard({ listing, onDelete, onEdit }) {
     }
   }
 
-  const minPrice = listing.units?.[0]?.pricePerDay ?? null;
-
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6 hover:shadow-md transition">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+    <div className="app-panel p-5 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-slate-900">{listing.title}</h3>
-          <p className="text-sm text-slate-600 mt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{listing.title}</h2>
+            <span className="app-chip">{listing.isVerified ? 'Verified' : 'Pending review'}</span>
+          </div>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             {listing.city}, {listing.state}
           </p>
-          <p className="text-sm text-slate-600 mt-2">{listing.description?.substring(0, 100)}...</p>
-          <div className="mt-3 flex flex-wrap gap-3">
-            <span className="inline-block px-2.5 py-1 rounded text-xs font-medium bg-slate-100 text-slate-700">
-              {listing.units?.length ?? 0} units
-            </span>
-            {minPrice && (
-              <span className="inline-block px-2.5 py-1 rounded text-xs font-medium bg-brand-50 text-brand-700">
-                From {formatMoney(minPrice)}/day
-              </span>
-            )}
+          <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            {listing.description?.substring(0, 120)}...
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="app-chip">{listing.units?.length ?? 0} units</span>
+            {minPrice ? <span className="app-chip">From {formatMoney(minPrice)}/day</span> : null}
           </div>
         </div>
+
         <div className="flex flex-wrap gap-2">
-          <Link
-            to={`/host/listings/${listing._id}/edit`}
-            className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition"
-          >
+          <Link to={`/host/listings/${listing._id}/edit`} className="app-button-secondary">
             Edit
           </Link>
-          <button
-            onClick={() => setShowDelete(!showDelete)}
-            className="px-4 py-2 rounded-lg border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition"
-          >
+          <button onClick={() => setShowDelete((open) => !open)} className="rounded-2xl border border-red-200 px-4 py-3 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/30">
             Delete
           </button>
         </div>
       </div>
+
       {showDelete && (
-        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-900 font-medium">Delete this listing?</p>
-          <p className="text-xs text-red-700 mt-1">This action cannot be undone.</p>
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition"
-            >
+        <div className="mt-4 rounded-3xl border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-950/30">
+          <p className="font-medium text-red-800 dark:text-red-300">Delete this listing?</p>
+          <p className="mt-1 text-sm text-red-700 dark:text-red-400">This action cannot be undone.</p>
+          <div className="mt-4 flex gap-2">
+            <button onClick={handleDelete} disabled={deleting} className="app-button-primary">
               {deleting ? 'Deleting...' : 'Confirm delete'}
             </button>
-            <button
-              onClick={() => setShowDelete(false)}
-              className="px-3 py-2 rounded-lg bg-slate-200 text-slate-900 text-sm font-medium hover:bg-slate-300 transition"
-            >
+            <button onClick={() => setShowDelete(false)} className="app-button-secondary">
               Cancel
             </button>
           </div>
@@ -122,60 +109,44 @@ export default function HostListings() {
     load();
   }, [navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="text-center">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-8">
+    <div className="app-page space-y-6">
+      <section className="app-panel p-6 sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Your listings</h1>
-            <p className="mt-1 text-slate-600">Manage your spaces and units</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Host mode</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">Your listings</h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              Manage inventory, pricing, and the details guests see before they book.
+            </p>
           </div>
-          <Link
-            to="/listings/new"
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition"
-          >
+          <Link to="/listings/new" className="app-button-primary">
             Create listing
           </Link>
         </div>
+      </section>
 
-        {error && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-            {error}
-          </div>
-        )}
-
-        {listings.length === 0 ? (
-          <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
-            <p className="text-slate-600 mb-4">You haven't created any listings yet</p>
-            <Link
-              to="/listings/new"
-              className="inline-block rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 transition"
-            >
-              Create your first listing
-            </Link>
-          </div>
-        ) : (
-          <div className="grid gap-6">
-            {listings.map((listing) => (
-              <ListingCard
-                key={listing._id}
-                listing={listing}
-                onDelete={(id) => setListings(listings.filter((l) => l._id !== id))}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {loading ? (
+        <div className="app-panel p-8 text-center text-slate-600 dark:text-slate-300">Loading listings...</div>
+      ) : error ? (
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+          {error}
+        </div>
+      ) : listings.length === 0 ? (
+        <div className="app-panel p-10 text-center">
+          <p className="text-lg font-medium text-slate-900 dark:text-white">You haven&apos;t created any listings yet</p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Start by publishing your first stay.</p>
+          <Link to="/listings/new" className="app-button-primary mt-6">
+            Create your first listing
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {listings.map((listing) => (
+            <ListingCard key={listing._id} listing={listing} onDelete={(id) => setListings((items) => items.filter((item) => item._id !== id))} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
