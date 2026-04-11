@@ -28,56 +28,35 @@ async function makeAdminRequest(method, endpoint, body = null) {
   return data;
 }
 
-export async function getHosts(search = '', isVerified = null, page = 1, limit = 10) {
-  const params = new URLSearchParams();
-  if (search) params.append('search', search);
-  if (isVerified !== null) params.append('isVerified', String(isVerified));
-  params.append('page', String(page));
-  params.append('limit', String(limit));
-
-  const base = getApiBase();
-  const token = getStoredToken();
-
-  const res = await fetch(`${base}/admin/hosts?${params}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+async function makeAdminGetRequest(endpoint, params = {}) {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === '') {
+      return;
+    }
+    searchParams.append(key, String(value));
   });
 
-  const data = await res.json().catch(() => ({}));
+  const query = searchParams.toString();
+  return makeAdminRequest('GET', `${endpoint}${query ? `?${query}` : ''}`);
+}
 
-  if (!res.ok) {
-    const message = data?.message ?? `Request failed (${res.status})`;
-    throw new Error(message);
-  }
-
-  return data;
+export async function getHosts(search = '', isVerified = null, page = 1, limit = 10) {
+  return makeAdminGetRequest('/hosts', {
+    search,
+    isVerified,
+    page,
+    limit,
+  });
 }
 
 export async function getListings(search = '', isVerified = null, page = 1, limit = 10) {
-  const params = new URLSearchParams();
-  if (search) params.append('search', search);
-  if (isVerified !== null) params.append('isVerified', String(isVerified));
-  params.append('page', String(page));
-  params.append('limit', String(limit));
-
-  const base = getApiBase();
-  const token = getStoredToken();
-
-  const res = await fetch(`${base}/admin/listings?${params}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+  return makeAdminGetRequest('/listings', {
+    search,
+    isVerified,
+    page,
+    limit,
   });
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    const message = data?.message ?? `Request failed (${res.status})`;
-    throw new Error(message);
-  }
-
-  return data;
 }
 
 export async function verifyHost(hostId) {

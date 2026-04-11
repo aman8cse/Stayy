@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createReview, fetchReviews } from '../api/auth.js';
+import InlineNotice from './InlineNotice.jsx';
 import { getStoredToken } from '../lib/authStorage.js';
 
 function Stars({ rating, onRate }) {
@@ -49,7 +50,7 @@ export function ReviewsList({ listingId }) {
   }
 
   if (error) {
-    return <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">{error}</div>;
+    return <InlineNotice tone="error">{error}</InlineNotice>;
   }
 
   if (reviews.length === 0) {
@@ -122,15 +123,11 @@ export function ReviewForm({ listingId, onSuccess }) {
       <h3 className="font-semibold text-slate-900 dark:text-white">Leave a review</h3>
 
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
-          {error}
-        </div>
+        <InlineNotice tone="error" className="p-3">{error}</InlineNotice>
       )}
 
       {success && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
-          Review posted successfully.
-        </div>
+        <InlineNotice tone="success" className="p-3">Review posted successfully.</InlineNotice>
       )}
 
       <div>
@@ -145,10 +142,11 @@ export function ReviewForm({ listingId, onSuccess }) {
           onChange={(e) => setComment(e.target.value)}
           disabled={submitting}
           className="app-input min-h-[112px] resize-none"
+          maxLength={2000}
           rows={4}
           placeholder="Share what the stay felt like..."
         />
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{comment.length}/500</p>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{comment.length}/2000</p>
       </div>
 
       <button type="submit" disabled={submitting || success} className="app-button-primary">

@@ -32,15 +32,25 @@ export async function getHosts(options = {}) {
     query.isVerified = isVerified;
   }
 
-  const total = await User.countDocuments(query);
-  const hosts = await User.find(query)
-    .select('_id name email phone role isVerified createdAt')
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .sort({ createdAt: -1 });
+  const baseQuery = { role: 'host' };
+  const [total, overallTotal, overallVerified, hosts] = await Promise.all([
+    User.countDocuments(query),
+    User.countDocuments(baseQuery),
+    User.countDocuments({ ...baseQuery, isVerified: true }),
+    User.find(query)
+      .select('_id name email phone role isVerified createdAt')
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 }),
+  ]);
 
   return {
     hosts: hosts.map(toPublicUser),
+    summary: {
+      total: overallTotal,
+      verified: overallVerified,
+      unverified: Math.max(overallTotal - overallVerified, 0),
+    },
     total,
     page,
     limit,
@@ -75,12 +85,16 @@ export async function getListings(options = {}) {
     query.isVerified = isVerified;
   }
 
-  const total = await Listing.countDocuments(query);
-  const listings = await Listing.find(query)
-    .populate('host', '_id name email')
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .sort({ createdAt: -1 });
+  const [total, overallTotal, overallVerified, listings] = await Promise.all([
+    Listing.countDocuments(query),
+    Listing.countDocuments({}),
+    Listing.countDocuments({ isVerified: true }),
+    Listing.find(query)
+      .populate('host', '_id name email')
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 }),
+  ]);
 
   return {
     listings: listings.map((listing) => ({
@@ -97,6 +111,11 @@ export async function getListings(options = {}) {
       isVerified: listing.isVerified,
       createdAt: listing.createdAt,
     })),
+    summary: {
+      total: overallTotal,
+      verified: overallVerified,
+      unverified: Math.max(overallTotal - overallVerified, 0),
+    },
     total,
     page,
     limit,

@@ -15,3 +15,12 @@ export async function listForUser(req, res) {
     bookings,
   });
 }
+
+export async function cancel(req, res) {
+  const booking = await bookingService.cancelBooking(req.user.id, req.params.bookingId);
+  res.status(200).json({
+    success: true,
+    message: 'Booking cancelled successfully',
+    booking,
+  });
+}

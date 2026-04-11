@@ -10,6 +10,8 @@ import {
   utcMidnightFromParts,
   utcDateTimeFromParts,
 } from '../utils/bookingDatetime.js';
+import { canCancelBooking } from '../utils/bookingLifecycle.js';
+import { toClientBooking } from '../utils/bookingPresentation.js';
 import { sendBookingConfirmationGuestEmail, sendBookingConfirmationHostEmail } from './emailService.js';
 import { User } from '../models/User.js';
 
@@ -154,11 +156,45 @@ export async function listBookingsForUser(userId) {
     throw new AppError('Invalid user id', 400);
   }
 
-  return Booking.find({ user: userId })
+  const bookings = await Booking.find({ user: userId })
     .sort({ createdAt: -1 })
     .populate({
       path: 'unit',
       populate: { path: 'listing', select: 'title city state country isVerified' },
     })
     .lean();
+
+  return bookings.map((booking) => toClientBooking(booking));
+}
+
+/**
+ * @param {string} userId
+ * @param {string} bookingId
+ */
+export async function cancelBooking(userId, bookingId) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new AppError('Invalid user id', 400);
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+    throw new AppError('Invalid booking id', 400);
+  }
+
+  const booking = await Booking.findOne({ _id: bookingId, user: userId }).populate({
+    path: 'unit',
+    populate: { path: 'listing', select: 'title city state country isVerified' },
+  });
+
+  if (!booking) {
+    throw new AppError('Booking not found', 404);
+  }
+
+  if (!canCancelBooking(booking)) {
+    throw new AppError('Only upcoming confirmed bookings can be cancelled', 400);
+  }
+
+  booking.status = 'cancelled';
+  await booking.save();
+
+  return toClientBooking(booking.toObject({ virtuals: true }));
 }

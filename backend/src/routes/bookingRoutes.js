@@ -7,5 +7,6 @@ const router = Router();
 
 router.post('/bookings', authMiddleware, asyncHandler(bookingController.create));
 router.get('/bookings/user', authMiddleware, asyncHandler(bookingController.listForUser));
+router.post('/bookings/:bookingId/cancel', authMiddleware, asyncHandler(bookingController.cancel));
 
 export default router;

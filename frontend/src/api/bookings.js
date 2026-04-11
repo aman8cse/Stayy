@@ -31,3 +31,22 @@ export async function createBooking(body, token) {
 
   return data;
 }
+
+export async function cancelBooking(bookingId, token) {
+  const base = getApiBase();
+  const res = await fetch(`${base}/bookings/${encodeURIComponent(bookingId)}/cancel`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const message = data?.message ?? `Request failed (${res.status})`;
+    throw new Error(message);
+  }
+
+  return data;
+}

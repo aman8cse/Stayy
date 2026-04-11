@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { fetchListingById } from '../api/listings.js';
 import { BookingConflictError, createBooking } from '../api/bookings.js';
-import { getStoredToken } from '../lib/authStorage.js';
 import { listUserBookings } from '../api/auth.js';
-import { estimateBookingTotal } from '../lib/bookingEstimate.js';
+import InlineNotice from '../components/InlineNotice.jsx';
 import { ReviewsList, ReviewForm } from '../components/Reviews.jsx';
+import { getStoredToken } from '../lib/authStorage.js';
+import { estimateBookingTotal } from '../lib/bookingEstimate.js';
 
 function formatMoney(n) {
-  if (n == null || Number.isNaN(n)) return '—';
+  if (n == null || Number.isNaN(n)) return '--';
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: 'INR',
@@ -45,6 +46,7 @@ export default function ListingDetails() {
 
   const load = useCallback(async () => {
     if (!listingId) return;
+
     setLoading(true);
     setLoadError(null);
     try {
@@ -52,8 +54,8 @@ export default function ListingDetails() {
       setListing(data.listing);
       const units = data.listing?.units ?? [];
       setUnitId(units[0]?._id ?? '');
-    } catch (e) {
-      setLoadError(e instanceof Error ? e.message : 'Failed to load listing');
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Failed to load listing');
       setListing(null);
     } finally {
       setLoading(false);
@@ -85,7 +87,7 @@ export default function ListingDetails() {
         if (!active) return;
 
         const hasBookingForListing = (data.bookings || []).some(
-          (booking) => booking?.listing?._id === listingId
+          (booking) => booking?.listing?._id === listingId && booking?.status === 'confirmed'
         );
 
         setCanReview(hasBookingForListing);
@@ -95,11 +97,11 @@ export default function ListingDetails() {
             ? ''
             : 'Only guests with a confirmed booking for this listing can leave a review.'
         );
-      } catch (err) {
+      } catch (error) {
         if (!active) return;
         setCanReview(false);
         setReviewStatus('error');
-        setReviewMessage(err instanceof Error ? err.message : 'Unable to check review eligibility right now.');
+        setReviewMessage(error instanceof Error ? error.message : 'Unable to check review eligibility right now.');
       }
     }
 
@@ -110,16 +112,20 @@ export default function ListingDetails() {
     };
   }, [listingId, bookingSuccess]);
 
-  const units = (listing?.units ?? []).filter((u) => (u.quantity ?? 1) > 0);
+  const units = useMemo(
+    () => (listing?.units ?? []).filter((unit) => (unit.quantity ?? 1) > 0),
+    [listing]
+  );
+
   const selectedUnit = useMemo(
-    () => units.find((u) => u._id === unitId) ?? units[0] ?? null,
-    [units, unitId]
+    () => units.find((unit) => unit._id === unitId) ?? units[0] ?? null,
+    [unitId, units]
   );
 
   const { totalHours, totalPrice } = estimateBookingTotal(startDate, endDate, startTime, endTime, selectedUnit);
 
-  async function onBook(e) {
-    e.preventDefault();
+  async function onBook(event) {
+    event.preventDefault();
     setBookingError(null);
     setConflict(false);
     setBookingSuccess(false);
@@ -129,10 +135,12 @@ export default function ListingDetails() {
       setBookingError('Sign in required to complete a booking.');
       return;
     }
+
     if (!selectedUnit?._id) {
       setBookingError('No bookable unit is available for this listing.');
       return;
     }
+
     if (totalHours == null || totalPrice == null) {
       setBookingError('Choose valid dates and times. End time must be after start time.');
       return;
@@ -154,12 +162,13 @@ export default function ListingDetails() {
       setCanReview(true);
       setReviewStatus('ready');
       setReviewMessage('');
-    } catch (err) {
-      if (err instanceof BookingConflictError) {
+    } catch (error) {
+      if (error instanceof BookingConflictError) {
         setConflict(true);
         return;
       }
-      setBookingError(err instanceof Error ? err.message : 'Booking failed');
+
+      setBookingError(error instanceof Error ? error.message : 'Booking failed');
     } finally {
       setSubmitting(false);
     }
@@ -172,9 +181,7 @@ export default function ListingDetails() {
   if (loadError || !listing) {
     return (
       <div className="app-page">
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
-          {loadError ?? 'Listing not found.'}
-        </div>
+        <InlineNotice tone="error">{loadError ?? 'Listing not found.'}</InlineNotice>
         <Link to="/" className="mt-6 inline-flex text-sm font-medium text-teal-600 dark:text-teal-300">
           Back to search
         </Link>
@@ -183,7 +190,8 @@ export default function ListingDetails() {
   }
 
   const host = listing.host;
-  const primaryImage = selectedUnit?.images?.find((img) => img.isThumbnail)?.url || selectedUnit?.images?.[0]?.url;
+  const primaryImage =
+    selectedUnit?.images?.find((image) => image.isThumbnail)?.url || selectedUnit?.images?.[0]?.url;
 
   return (
     <div className="app-page space-y-6">
@@ -238,9 +246,9 @@ export default function ListingDetails() {
                 )}
               </div>
               <div className="grid gap-3">
-                {(selectedUnit?.images || []).slice(1, 4).map((img, idx) => (
-                  <div key={idx} className="overflow-hidden rounded-[20px] bg-slate-100 dark:bg-slate-900/60">
-                    <img src={img.url} alt={`${listing.title} ${idx + 2}`} className="h-24 w-full object-cover md:h-full" />
+                {(selectedUnit?.images || []).slice(1, 4).map((image, index) => (
+                  <div key={index} className="overflow-hidden rounded-[20px] bg-slate-100 dark:bg-slate-900/60">
+                    <img src={image.url} alt={`${listing.title} ${index + 2}`} className="h-24 w-full object-cover md:h-full" />
                   </div>
                 ))}
                 {(selectedUnit?.images?.length || 0) <= 1 ? (
@@ -261,9 +269,9 @@ export default function ListingDetails() {
             <section className="app-panel p-6">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Amenities</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {selectedUnit.amenities.map((amenity, idx) => (
-                  <div key={idx} className="app-panel-soft flex items-center gap-3 p-3 text-sm text-slate-700 dark:text-slate-300">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-300">✓</span>
+                {selectedUnit.amenities.map((amenity, index) => (
+                  <div key={index} className="app-panel-soft flex items-center gap-3 p-3 text-sm text-slate-700 dark:text-slate-300">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-300">+</span>
                     {amenity}
                   </div>
                 ))}
@@ -278,15 +286,11 @@ export default function ListingDetails() {
             </div>
             <div className="mt-8">
               {reviewStatus === 'loading' ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
-                  Checking whether you can review this stay...
-                </div>
+                <InlineNotice tone="info">Checking whether you can review this stay...</InlineNotice>
               ) : canReview ? (
                 <ReviewForm listingId={listing._id} />
               ) : (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
-                  {reviewMessage}
-                </div>
+                <InlineNotice tone="info">{reviewMessage}</InlineNotice>
               )}
             </div>
           </section>
@@ -311,12 +315,12 @@ export default function ListingDetails() {
                     <select
                       id="unit"
                       value={unitId}
-                      onChange={(e) => setUnitId(e.target.value)}
+                      onChange={(event) => setUnitId(event.target.value)}
                       className="app-input mt-1.5"
                     >
-                      {units.map((u) => (
-                        <option key={u._id} value={u._id}>
-                          {u.unitType?.replace('_', ' ') ?? 'Unit'} · {formatMoney(u.pricePerDay)}/day · cap {u.capacity} · qty {u.quantity ?? 1}
+                      {units.map((unit) => (
+                        <option key={unit._id} value={unit._id}>
+                          {unit.unitType?.replace('_', ' ') ?? 'Unit'} · {formatMoney(unit.pricePerDay)}/day · cap {unit.capacity} · qty {unit.quantity ?? 1}
                         </option>
                       ))}
                     </select>
@@ -326,19 +330,19 @@ export default function ListingDetails() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="startDate" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Start date</label>
-                    <input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="app-input mt-1.5" required />
+                    <input id="startDate" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="app-input mt-1.5" required />
                   </div>
                   <div>
                     <label htmlFor="endDate" className="block text-sm font-medium text-slate-700 dark:text-slate-200">End date</label>
-                    <input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="app-input mt-1.5" required />
+                    <input id="endDate" type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="app-input mt-1.5" required />
                   </div>
                   <div>
                     <label htmlFor="startTime" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Start time</label>
-                    <input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="app-input mt-1.5" required />
+                    <input id="startTime" type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} className="app-input mt-1.5" required />
                   </div>
                   <div>
                     <label htmlFor="endTime" className="block text-sm font-medium text-slate-700 dark:text-slate-200">End time</label>
-                    <input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="app-input mt-1.5" required />
+                    <input id="endTime" type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} className="app-input mt-1.5" required />
                   </div>
                 </div>
 
@@ -350,21 +354,9 @@ export default function ListingDetails() {
                   </p>
                 </div>
 
-                {conflict ? (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
-                    This unit is already booked for part of your selected time.
-                  </div>
-                ) : null}
-                {bookingError ? (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
-                    {bookingError}
-                  </div>
-                ) : null}
-                {bookingSuccess ? (
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
-                    Booking confirmed. You can find it in your trips.
-                  </div>
-                ) : null}
+                {conflict ? <InlineNotice tone="warning">This unit is already booked for part of your selected time.</InlineNotice> : null}
+                {bookingError ? <InlineNotice tone="error">{bookingError}</InlineNotice> : null}
+                {bookingSuccess ? <InlineNotice tone="success">Booking confirmed. You can find it in your trips.</InlineNotice> : null}
 
                 <button type="submit" disabled={submitting || units.length === 0} className="app-button-primary w-full">
                   {submitting ? 'Booking...' : 'Book now'}
