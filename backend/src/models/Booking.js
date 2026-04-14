@@ -7,6 +7,11 @@ const bookingSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    host: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     unit: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Unit',
@@ -51,5 +56,6 @@ const bookingSchema = new mongoose.Schema(
 
 bookingSchema.index({ unit: 1, status: 1 });
 bookingSchema.index({ user: 1, createdAt: -1 });
+bookingSchema.index({ host: 1, createdAt: -1});
 
 export const Booking = mongoose.model('Booking', bookingSchema);

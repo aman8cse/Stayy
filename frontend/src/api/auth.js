@@ -58,6 +58,31 @@ export async function listUserBookings(token) {
   };
 }
 
+export async function listBookings(token) {
+  const base = getApiBase();
+  const res = await fetch(`${base}/bookings/host`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data?.message ?? `Request failed (${res.status})`;
+    throw new Error(message);
+  }
+
+  return {
+    ...data,
+    bookings: Array.isArray(data?.bookings)
+      ? data.bookings.map((booking) => ({
+          ...booking,
+          listing: booking?.listing ?? booking?.unit?.listing ?? null,
+        }))
+      : [],
+  };
+}
+
 export async function verifyOTP(email, otpCode) {
   const base = getApiBase();
   const res = await fetch(`${base}/auth/verify-otp`, {

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { userRef, useEffect, useState, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { getStoredToken, clearToken } from '../lib/authStorage.js';
 import { getStoredUser, clearUser, isUserHost, isUserAdmin } from '../lib/userStorage.js';
 import { useTheme } from '../lib/theme.jsx';
+
 
 function ShellIcon({ path }) {
   return (
@@ -36,6 +37,21 @@ export default function AppShell() {
   const user = getStoredUser();
   const isHost = isUserHost();
   const isAdmin = isUserAdmin();
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+  function handleClickOutside(event) {
+    if (menuRef.current && !menuRef.current.contains(event.target)) {
+      setShowUserMenu(false);
+    }
+  }
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
 
   function handleLogout() {
     clearToken();
@@ -67,8 +83,13 @@ export default function AppShell() {
               Discover
             </NavLink>
             {token && (
-              <NavLink to="/bookings" className={topLinkClass}>
+              <NavLink to="/bookings"end className={topLinkClass}>
                 Trips
+              </NavLink>
+            )}
+            {token && isHost && (
+              <NavLink to="/bookings/host" className={topLinkClass}>
+                Bookings
               </NavLink>
             )}
             {token && isHost && (
@@ -97,7 +118,7 @@ export default function AppShell() {
             </button>
 
             {token ? (
-              <div className="relative">
+              <div ref={menuRef} className="relative">
                 <button
                   onClick={() => setShowUserMenu((open) => !open)}
                   className="inline-flex items-center gap-3 rounded-2xl border border-black/5 bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200"
@@ -111,6 +132,13 @@ export default function AppShell() {
 
                 {showUserMenu && (
                   <div className="absolute right-0 top-full mt-2 w-56 rounded-3xl border border-white/60 bg-white/95 p-2 shadow-2xl shadow-slate-900/10 backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-black/30">
+                    <NavLink
+                      to="/bookings/host"
+                      onClick={() => setShowUserMenu(false)}
+                      className="block rounded-2xl px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      Bookings
+                    </NavLink>
                     <NavLink
                       to="/bookings"
                       onClick={() => setShowUserMenu(false)}
@@ -192,9 +220,15 @@ export default function AppShell() {
             Discover
           </NavLink>
           {token && (
-            <NavLink to="/bookings" className={mobileLinkClass}>
+            <NavLink to="/bookings"end className={mobileLinkClass}>
               <ShellIcon path="M8 7V3m8 4V3M5 11h14M6 5h12a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />
               Trips
+            </NavLink>
+          )}
+          {token && isHost && (
+            <NavLink to="/bookings/host" className={mobileLinkClass}>
+              <ShellIcon path="M4 20h16M6 20V9l6-5 6 5v11M10 20v-5h4v5" />
+              Bookings
             </NavLink>
           )}
           {token && isHost && (

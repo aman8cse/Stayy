@@ -16,6 +16,14 @@ export async function listForUser(req, res) {
   });
 }
 
+export async function listForHost(req, res) {
+  const bookings = await bookingService.listBookingsForHost(req.user.id);
+  res.status(200).json({
+    success: true,
+    bookings,
+  });
+}
+
 export async function cancel(req, res) {
   const booking = await bookingService.cancelBooking(req.user.id, req.params.bookingId);
   res.status(200).json({

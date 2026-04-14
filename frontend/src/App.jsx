@@ -13,6 +13,7 @@ import MyBookings from './pages/MyBookings.jsx';
 import BecomeHost from './pages/BecomeHost.jsx';
 import HostListings from './pages/HostListings.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import Bookings from './pages/Bookings.jsx';
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/host/listings/:listingId/edit" element={<CreateListing />} />
             <Route path="/listings/:listingId" element={<ListingDetails />} />
             <Route path="/bookings" element={<MyBookings />} />
+            <Route path="/bookings/host" element={<Bookings />} />
             <Route path="/become-host" element={<BecomeHost />} />
             <Route path="/host/listings" element={<HostListings />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />

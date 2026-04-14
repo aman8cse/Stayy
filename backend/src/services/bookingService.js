@@ -14,6 +14,7 @@ import { canCancelBooking } from '../utils/bookingLifecycle.js';
 import { toClientBooking } from '../utils/bookingPresentation.js';
 import { sendBookingConfirmationGuestEmail, sendBookingConfirmationHostEmail } from './emailService.js';
 import { User } from '../models/User.js';
+import { Listing } from '../models/Listing.js';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed'];
 
@@ -80,6 +81,12 @@ export async function createBooking(userId, body) {
     throw new AppError('Unit not found', 404);
   }
 
+  const listing = await Listing.findById( unit.listing ).select("host");
+  if(!listing) {
+    throw new AppError("Listing not found", 404);
+  }
+  const hostId = listing.host;
+
   const startParts = getUtcDateParts(startDate);
   const endParts = getUtcDateParts(endDate);
   const newStart = utcDateTimeFromParts(startParts, String(startTime ?? ''));
@@ -94,6 +101,7 @@ export async function createBooking(userId, body) {
 
   const booking = await Booking.create({
     user: userId,
+    host: hostId,
     unit: unitId,
     startDate: utcMidnightFromParts(startParts),
     endDate: utcMidnightFromParts(endParts),
@@ -157,6 +165,25 @@ export async function listBookingsForUser(userId) {
   }
 
   const bookings = await Booking.find({ user: userId })
+    .sort({ createdAt: -1 })
+    .populate({
+      path: 'unit',
+      populate: { path: 'listing', select: 'title city state country isVerified' },
+    })
+    .lean();
+
+  return bookings.map((booking) => toClientBooking(booking));
+}
+
+/**
+ * @param {string} hostId
+ */
+export async function listBookingsForHost(hostId) {
+  if (!mongoose.Types.ObjectId.isValid(hostId)) {
+    throw new AppError('Invalid user id', 400);
+  }
+
+  const bookings = await Booking.find({ host: hostId, status: { $in: ['pending', 'confirmed'] } })
     .sort({ createdAt: -1 })
     .populate({
       path: 'unit',
