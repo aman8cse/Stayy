@@ -142,6 +142,8 @@ function parseCreatePayload(body) {
       }));
   }
 
+  let thumbnail = images[0].url;
+
   // Optional: Amenities
   let amenities = [];
   if (Array.isArray(body?.amenities) && body.amenities.length > 0) {
@@ -154,6 +156,7 @@ function parseCreatePayload(body) {
   return {
     listing: {
       title,
+      thumbnail,
       description,
       city,
       state,

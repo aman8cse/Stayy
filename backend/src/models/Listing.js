@@ -7,6 +7,10 @@ const listingSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    thumbnail: {
+      type: String,
+      required: true,
+    },
     description: {
       type: String,
       required: true,

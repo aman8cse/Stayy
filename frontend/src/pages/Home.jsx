@@ -221,14 +221,7 @@ export default function Home() {
                   <article className="flex h-full flex-col">
                     <div className="relative aspect-[5/4] bg-gradient-to-br from-teal-400/20 via-cyan-300/10 to-slate-200 dark:from-teal-500/20 dark:via-slate-900 dark:to-slate-800">
                       <div className="absolute inset-0 flex items-center justify-center text-slate-400 dark:text-slate-600">
-                        <svg className="h-14 w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.25}
-                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                          />
-                        </svg>
+                        <img src={listing.thumbnail} alt="Room images error" />
                       </div>
                       {verified ? (
                         <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-teal-700 shadow-sm ring-1 ring-teal-600/10 dark:bg-slate-950/85 dark:text-teal-300">
