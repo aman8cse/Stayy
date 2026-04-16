@@ -1,4 +1,4 @@
-import { userRef, useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { getStoredToken, clearToken } from '../lib/authStorage.js';
 import { getStoredUser, clearUser, isUserHost, isUserAdmin } from '../lib/userStorage.js';
@@ -213,7 +213,7 @@ export default function AppShell() {
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/70 bg-white/90 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-20px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-950/88 md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/70 bg-white/90 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-20px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:shadow-[0_-20px_60px_-30px_rgba(0,0,0,0.8)] dark:border-slate-700/60 dark:bg-slate-950/80 md:hidden">
         <div className="mx-auto flex max-w-xl items-center gap-2">
           <NavLink to="/" className={mobileLinkClass} end>
             <ShellIcon path="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z" />
